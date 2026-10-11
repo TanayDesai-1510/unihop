@@ -149,6 +149,30 @@ class MatchingIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM ride_offers", Integer.class)).isZero();
     }
 
+    /** The NO_DRIVERS status event fires before the client knows the ride id, so the 201 itself must say NO_DRIVERS. */
+    @Test
+    void createResponseAlreadyShowsNoDriversWhenNobodyIsOnline() throws Exception {
+        jdbc.update("UPDATE driver_profiles SET is_online = false");
+        mvc.perform(post("/api/rides").header("X-Demo-User", RIDER1.toString())
+                        .contentType("application/json")
+                        .content("{\"pickupHubId\":\"" + YARD + "\",\"dropoffHubId\":\"" + BUSCH_SC + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("NO_DRIVERS"))
+                .andExpect(jsonPath("$.cancelledBy").value("SYSTEM"))
+                .andExpect(jsonPath("$.cancelledAt").isString())
+                .andExpect(jsonPath("$.payment.amountTotal").value(6.5));
+    }
+
+    @Test
+    void createResponseIsStillRequestedWhileAnOfferIsOut() throws Exception {
+        mvc.perform(post("/api/rides").header("X-Demo-User", RIDER1.toString())
+                        .contentType("application/json")
+                        .content("{\"pickupHubId\":\"" + YARD + "\",\"dropoffHubId\":\"" + BUSCH_SC + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("REQUESTED"))
+                .andExpect(jsonPath("$.driver").value(org.hamcrest.Matchers.nullValue()));
+    }
+
     @Test
     void driversOnARideOrHoldingAnOfferAreSkipped() throws Exception {
         UUID first = requestRide(RIDER1);

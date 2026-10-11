@@ -29,7 +29,11 @@ public class RideController {
 
     @PostMapping
     public ResponseEntity<Ride> create(@Valid @RequestBody CreateRideRequest body) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(rides.create(currentUser.id(), body));
+        UUID riderId = currentUser.id();
+        Ride created = rides.create(riderId, body);
+        // Matching runs as the ride commits, before we get here. With no drivers the ride is already NO_DRIVERS and its
+        // status event went out before the client could subscribe, so return the current state, not the REQUESTED one.
+        return ResponseEntity.status(HttpStatus.CREATED).body(rides.get(created.id(), riderId));
     }
 
     @GetMapping("/active")
