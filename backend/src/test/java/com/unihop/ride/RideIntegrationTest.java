@@ -146,12 +146,18 @@ class RideIntegrationTest {
 
     @Test
     void paymentSummaryIsReadFromRidePayments() throws Exception {
-        String id = createdId(RIDER1, YARD, BUSCH_SC);
-        // what the real PaymentService writes for a credits + card split
+        // rider1 has 5.00 UniHop Cash and a default Visa 4242; Yard -> Busch is 6.50
+        String body = mvc.perform(post("/api/rides").header("X-Demo-User", RIDER1).contentType("application/json")
+                        .content("{\"pickupHubId\":\"" + YARD + "\",\"dropoffHubId\":\"" + BUSCH_SC + "\",\"useCredits\":true}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String id = com.jayway.jsonpath.JsonPath.read(body, "$.id");
+        // The real PaymentService writes this row itself during authorizeRide; StubPaymentService writes nothing, so
+        // insert the same split only if no row exists. Either way the reader is checked against a credits + card split.
         jdbc.update("""
                 INSERT INTO ride_payments (id, ride_id, user_id, payment_method_id, amount_total, credits_applied,
                                            card_amount, status, authorized_at)
-                VALUES (?, ?::uuid, ?::uuid, '00000000-0000-0000-0000-000000000401', 6.50, 5.00, 1.50, 'AUTHORIZED', now())""",
+                VALUES (?, ?::uuid, ?::uuid, '00000000-0000-0000-0000-000000000401', 6.50, 5.00, 1.50, 'AUTHORIZED', now())
+                ON CONFLICT (ride_id) DO NOTHING""",
                 UUID.randomUUID(), id, RIDER1);
         mvc.perform(get("/api/rides/" + id).header("X-Demo-User", RIDER1))
                 .andExpect(jsonPath("$.payment.methodLabel").value("UniHop Cash + Visa •••• 4242"))
