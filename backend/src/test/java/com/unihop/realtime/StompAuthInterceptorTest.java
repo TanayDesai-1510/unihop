@@ -27,8 +27,13 @@ class StompAuthInterceptorTest {
         throw ApiException.unauthorized("Invalid access token");
     };
 
-    final StompAuthInterceptor demoOn = new StompAuthInterceptor(VERIFIER, true);
-    final StompAuthInterceptor demoOff = new StompAuthInterceptor(VERIFIER, false);
+    /** RIDE belongs to RIDER1 with DRIVER1 assigned. */
+    static final UUID RIDE = UUID.fromString("00000000-0000-0000-0000-00000000aaaa");
+    static final RideAccess ACCESS = (rideId, userId) -> rideId.equals(RIDE)
+            && (userId.equals(RIDER1) || userId.equals(DRIVER1));
+
+    final StompAuthInterceptor demoOn = new StompAuthInterceptor(VERIFIER, true, ACCESS);
+    final StompAuthInterceptor demoOff = new StompAuthInterceptor(VERIFIER, false, ACCESS);
 
     @Test
     void connectWithValidBearerSetsUser() {
@@ -74,10 +79,27 @@ class StompAuthInterceptorTest {
 
     @Test
     void subscribeRequiresUserAndTopicPrefix() {
-        send(demoOn, subscribe(RIDER1, Topics.rideStatus(UUID.randomUUID())));
-        assertThatThrownBy(() -> send(demoOn, subscribe(null, Topics.rideStatus(UUID.randomUUID()))))
+        send(demoOn, subscribe(RIDER1, Topics.rideStatus(RIDE)));
+        assertThatThrownBy(() -> send(demoOn, subscribe(null, Topics.rideStatus(RIDE))))
                 .isInstanceOf(MessageDeliveryException.class);
         assertThatThrownBy(() -> send(demoOn, subscribe(RIDER1, "/queue/anything")))
+                .isInstanceOf(MessageDeliveryException.class);
+    }
+
+    @Test
+    void rideTopicsAreForTheRiderAndAssignedDriverOnly() {
+        for (String topic : new String[]{Topics.rideStatus(RIDE), Topics.rideLocation(RIDE), Topics.rideChat(RIDE)}) {
+            send(demoOn, subscribe(RIDER1, topic));
+            send(demoOn, subscribe(DRIVER1, topic));
+            assertThatThrownBy(() -> send(demoOn, subscribe(DRIVER2, topic)))
+                    .as(topic).isInstanceOf(MessageDeliveryException.class);
+        }
+        // a ride nobody takes part in, a malformed id, and the bare prefix
+        assertThatThrownBy(() -> send(demoOn, subscribe(RIDER1, Topics.rideStatus(UUID.randomUUID()))))
+                .isInstanceOf(MessageDeliveryException.class);
+        assertThatThrownBy(() -> send(demoOn, subscribe(RIDER1, "/topic/rides/garbage/status")))
+                .isInstanceOf(MessageDeliveryException.class);
+        assertThatThrownBy(() -> send(demoOn, subscribe(RIDER1, "/topic/rides/")))
                 .isInstanceOf(MessageDeliveryException.class);
     }
 

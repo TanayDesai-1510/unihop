@@ -18,7 +18,8 @@ import java.util.UUID;
  * <ul>
  *   <li>CONNECT: {@code Authorization: Bearer <jwt>}, or {@code X-Demo-User: <uuid>} when demo headers are enabled.
  *       A bearer header always wins, same as {@link CurrentUser}.</li>
- *   <li>SUBSCRIBE: only under {@code /topic/}; a driver's offer topic only by that driver.</li>
+ *   <li>SUBSCRIBE: only under {@code /topic/}; a driver's offer topic only by that driver; a ride's topics
+ *       ({@code /topic/rides/{id}/status|location|chat}) only by its rider or assigned driver.</li>
  *   <li>SEND: rejected. Clients only subscribe.</li>
  * </ul>
  * Rejections throw, which makes Spring answer with a STOMP ERROR frame and close the session.
@@ -30,10 +31,12 @@ public class StompAuthInterceptor implements ChannelInterceptor {
 
     private final StompTokenVerifier tokenVerifier;
     private final boolean demoHeaderEnabled;
+    private final RideAccess rideAccess;
 
-    public StompAuthInterceptor(StompTokenVerifier tokenVerifier, boolean demoHeaderEnabled) {
+    public StompAuthInterceptor(StompTokenVerifier tokenVerifier, boolean demoHeaderEnabled, RideAccess rideAccess) {
         this.tokenVerifier = tokenVerifier;
         this.demoHeaderEnabled = demoHeaderEnabled;
+        this.rideAccess = rideAccess;
     }
 
     @Override
@@ -77,7 +80,7 @@ public class StompAuthInterceptor implements ChannelInterceptor {
         throw new MessageDeliveryException("Authentication required");
     }
 
-    private static void checkSubscription(StompHeaderAccessor accessor) {
+    private void checkSubscription(StompHeaderAccessor accessor) {
         if (!(accessor.getUser() instanceof StompUser user)) {
             throw new MessageDeliveryException("Authentication required");
         }
@@ -88,6 +91,10 @@ public class StompAuthInterceptor implements ChannelInterceptor {
         UUID offerOwner = Topics.driverOfOffersTopic(destination);
         if (offerOwner != null && !offerOwner.equals(user.id())) {
             throw new MessageDeliveryException("Forbidden: not your offer topic");
+        }
+        UUID rideId = Topics.rideOfRideTopic(destination);
+        if (rideId != null && !rideAccess.isParticipant(rideId, user.id())) {
+            throw new MessageDeliveryException("Forbidden: not a participant in this ride");
         }
     }
 
