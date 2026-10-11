@@ -20,6 +20,8 @@ These are the only places Hriday's and Dev's code touch. Stubs exist from the sc
 
 Supporting types (also frozen): `com.unihop.pricing.FareBreakdown`, `com.unihop.payments.PaymentSummary`, `com.unihop.payments.PaymentDeclinedException` (carries `DeclineCode declineCode`), `com.unihop.payments.PaymentMethodRequiredException`, and all enums in `com.unihop.common.enums`.
 
+Claude assistant ownership: Hriday owns `backend/src/**/com/unihop/assistant/**` and its tests. Tanay owns the assistant UI and client-side action runner in `frontend/**`. The assistant may return a bounded command, but all state-changing work still goes through the existing authenticated REST endpoints below.
+
 Scaffold state: `CurrentUser` works with `X-Demo-User`. `FareService` is fully implemented against the `fares` table. `PaymentService` is a stub (`StubPaymentService`): authorize always succeeds, capture/void log and do nothing. Hriday replaces the stub.
 
 ---
@@ -59,6 +61,7 @@ Scaffold state: `CurrentUser` works with `X-Demo-User`. `FareService` is fully i
 | 409 | `PAYMENT_METHOD_IN_USE` | Deleting a method that holds an active authorization |
 | 409 | `ALREADY_RATED` | Rater already rated this ride |
 | 409 | `NOTHING_TO_CASH_OUT` | Earnings balance is 0 |
+| 503 | `ASSISTANT_UNAVAILABLE` | Claude is disabled, unavailable, times out, or returns an invalid response |
 | 500 | `INTERNAL_ERROR` | Anything unexpected |
 
 ---
@@ -78,6 +81,7 @@ Scaffold state: `CurrentUser` works with `X-Demo-User`. `FareService` is fully i
 | `DeclineCode` | CARD_DECLINED, INSUFFICIENT_FUNDS, EXPIRED_CARD, INCORRECT_CVC |
 | `CreditTxnType` | PROMO, TOPUP, RIDE_SPEND, RIDE_REFUND |
 | `EarningTxnType` | RIDE_EARNING, PAYOUT |
+| `AssistantAction` | BOOK_RIDE, WATCH_RIDES, STOP_WATCHING, HELP |
 
 Ride status transitions (anything else returns 409 `INVALID_TRANSITION`):
 
@@ -321,6 +325,12 @@ All 25 rows of the table in section 4 (both directions).
 - `GET /api/rides/{id}/receipt` → `Receipt` (COMPLETED rides only)
 - `GET /api/admin/stats` stretch → `AdminStats`
 
+### Claude assistant [Hriday backend, Tanay frontend; stretch]
+- `POST /api/assistant/commands` `{message}` → `AssistantCommand`. Authenticated. `message` is trimmed, must contain 1-500 characters, and may come from speech transcription or typed input.
+- The backend sends Claude only the message, the caller's current `UserMode`, and the current hub ids/codes/names. Claude returns one bounded action; the backend treats that output as untrusted, validates the action against the caller's mode, and validates every hub id against the current hub catalog.
+- In RIDER mode, an unambiguous request to travel between two different hubs returns `BOOK_RIDE` with both hub ids. In DRIVER mode, an unambiguous request to find rides ending at a hub returns `WATCH_RIDES` with only `dropoffHubId`. A request to stop a driver watch returns `STOP_WATCHING`. Unsupported, mode-incompatible, or ambiguous requests return `HELP` with a clarification in `reply`; all hub fields are null and no state changes.
+- Missing configuration, provider errors/timeouts, or malformed provider output return 503 `ASSISTANT_UNAVAILABLE`. No action is executed on an error.
+
 ---
 
 ## 9. DTOs
@@ -349,6 +359,7 @@ All fields are required unless marked `?` (nullable, still present as `null`).
 - `PublicRideView` (stretch): status, pickupHub `Hub`, dropoffHub `Hub`, driver `DriverCard`?, riderFirstName, etaSeconds?, updatedAt
 - `ChatMessage` (stretch): id, senderId, body, createdAt
 - `AdminStats` (stretch): ridesToday, activeRides, driversOnline, grossToday, marginToday
+- `AssistantCommand` (stretch): action `AssistantAction`, reply, pickupHubId?, dropoffHubId?
 - `ApiError`: error, message, declineCode? (only on 402 `PAYMENT_DECLINED`)
 
 ---
@@ -396,3 +407,15 @@ All fields are required unless marked `?` (nullable, still present as `null`).
 6. Payment is CAPTURED, driver earnings increased by `driverPayout`, receipt shows the method label, rating submitted.
 7. Request with the 0002 card returns 402 `PAYMENT_DECLINED` with `declineCode` `CARD_DECLINED` and creates no ride.
 8. Request then cancel leaves payment VOIDED and credits restored.
+
+---
+
+## 14. Claude assistant behavior (stretch)
+
+- The authenticated rider and driver landing/home surfaces expose one Claude button. Pressing it once opens the assistant and starts browser speech recognition when available. A typed-input fallback is always available. Raw microphone audio stays in the browser; only the transcript or typed message is sent to `/api/assistant/commands`.
+- `BOOK_RIDE` is executed immediately without another confirmation by calling the existing `POST /api/rides` endpoint with the returned hub ids, `paymentMethodId = null`, `useCredits = true`, and null promo/schedule fields. The normal ride API remains authoritative for fare calculation, payment, active-ride checks, matching, and errors. On success the UI opens the active ride.
+- `WATCH_RIDES` immediately places the driver online through the existing availability endpoint if needed, using the browser's current geolocation. If location permission is unavailable or denied, the UI explains that the watch could not start and performs no offer action.
+- While a destination watch is active, the frontend consumes the existing driver offer WebSocket topic and `GET /api/drivers/me/offer` reconnect fallback. It declines live offers whose `dropoffHub.id` differs from the watched hub and accepts the first matching offer through the existing ride endpoints, without another confirmation. `OFFER_NOT_ACTIVE` is treated as a race and the watch continues; any other accept/decline error is shown to the driver.
+- A destination watch is scoped to the signed-in browser session and stored only in session storage so it survives a reload/reconnect. It stops after a matching offer is accepted, on `STOP_WATCHING`, logout, switching out of DRIVER mode, or the browser session ending.
+- The assistant never receives or gains direct access to JWTs, card/payment data, precise driver location, user profile data, databases, arbitrary URLs, or arbitrary application tools. It cannot create or accept a ride directly; it only returns `AssistantCommand`, and the existing endpoints enforce authorization and business rules.
+- Assistant messages and transcripts are not persisted and are excluded from application logs. The Anthropic API key is backend-only, supplied as `ANTHROPIC_API_KEY`, and never committed or exposed through `NEXT_PUBLIC_*`. The model is configurable with `ANTHROPIC_MODEL`.
