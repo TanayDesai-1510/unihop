@@ -36,6 +36,9 @@ export type CreditTxnType = (typeof CREDIT_TXN_TYPES)[number];
 export const EARNING_TXN_TYPES = ["RIDE_EARNING", "PAYOUT"] as const;
 export type EarningTxnType = (typeof EARNING_TXN_TYPES)[number];
 
+export const ASSISTANT_ACTIONS = ["BOOK_RIDE", "WATCH_RIDES", "STOP_WATCHING", "HELP"] as const;
+export type AssistantAction = (typeof ASSISTANT_ACTIONS)[number];
+
 export type WalletType = "APPLE_PAY" | "GOOGLE_PAY";
 export type CancelledBy = "RIDER" | "DRIVER" | "SYSTEM";
 
@@ -67,6 +70,7 @@ export type ErrorCode =
   | "PAYMENT_METHOD_IN_USE"
   | "ALREADY_RATED"
   | "NOTHING_TO_CASH_OUT"
+  | "ASSISTANT_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 export interface ApiError {
@@ -288,6 +292,13 @@ export interface AdminStats {
   marginToday: number;
 }
 
+export interface AssistantCommand {
+  action: AssistantAction;
+  reply: string;
+  pickupHubId: string | null;
+  dropoffHubId: string | null;
+}
+
 export interface HealthResponse {
   status: "ok";
 }
@@ -316,6 +327,10 @@ export interface OnboardDriverBody {
   carModel: string;
   carColor: string;
   plate: string;
+}
+
+export interface AssistantCommandBody {
+  message: string;
 }
 
 export interface TokenizeCardBody {

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, ApiRequestError, setToken } from "@/lib/api";
+import { removeDriverWatch } from "@/lib/assistant";
 import type { User, UserMode } from "@/lib/types";
 import { realtime } from "@/lib/ws";
 
@@ -77,11 +78,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const setMode = useCallback(async (mode: UserMode) => {
     const updated = await api.updateMe({ mode });
+    if (mode !== "DRIVER") removeDriverWatch();
     setUser(updated);
     return updated;
   }, []);
 
   const signOut = useCallback(() => {
+    removeDriverWatch();
     setToken(null);
     realtime.disconnect();
     setUser(null);

@@ -49,4 +49,9 @@ app:
     enabled: true
   mockpay:
     latency-ms: 800
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${ANTHROPIC_MODEL:claude-sonnet-5}
+    base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com/v1/messages}
+    timeout-ms: ${ANTHROPIC_TIMEOUT_MS:8000}
   frontend-url: ${FRONTEND_URL:http://localhost:3000}

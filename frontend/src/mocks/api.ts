@@ -13,6 +13,7 @@ import { paymentMethodLabel } from "@/lib/cards";
 import { ApiRequestError, getToken } from "@/lib/session";
 import type {
   AdminStats,
+  AssistantCommand,
   CancelledBy,
   ChatMessage,
   CreditTxnType,
@@ -217,6 +218,58 @@ function hub(id: string): Hub {
   const h = HUBS.find((x) => x.id === id);
   if (!h) fail(404, "HUB_NOT_FOUND", `Unknown hub ${id}`);
   return h;
+}
+
+function assistantHubs(message: string): Hub[] {
+  const text = message.toLowerCase();
+  const aliases = new Map<string, string[]>([
+    [ID.yard, ["the yard", "yard"]],
+    [ID.buschSc, ["busch student center", "busch"]],
+    [ID.liviSc, ["livingston student center", "livingston", "livi"]],
+    [ID.cookCc, ["cook campus center", "cook student center", "cook"]],
+    [ID.douglassSc, ["douglass student center", "douglass"]],
+    [ID.nbStation, ["new brunswick station", "train station", "station"]],
+  ]);
+  return [...aliases]
+    .map(([id, names]) => {
+      const positions = names.map((name) => text.indexOf(name)).filter((index) => index >= 0);
+      return { hub: HUBS.find((candidate) => candidate.id === id)!, index: positions.length ? Math.min(...positions) : -1 };
+    })
+    .filter((match) => match.index >= 0)
+    .sort((a, b) => a.index - b.index)
+    .map((match) => match.hub);
+}
+
+function mockAssistantCommand(message: string): AssistantCommand {
+  const user = me();
+  const text = message.trim().toLowerCase();
+  if (!text || text.length > 500) fail(400, "VALIDATION_ERROR", "Message must contain 1-500 characters");
+  if (/\b(stop|cancel)\b.*\b(watch|watching|look|looking)\b/.test(text)) {
+    return user.mode === "DRIVER"
+      ? { action: "STOP_WATCHING", reply: "I stopped watching for destination-matched rides.", pickupHubId: null, dropoffHubId: null }
+      : { action: "HELP", reply: "Switch to driver mode to manage a ride watch.", pickupHubId: null, dropoffHubId: null };
+  }
+  const matches = assistantHubs(text);
+  if (user.mode === "RIDER") {
+    if (matches.length !== 2 || matches[0].id === matches[1].id) {
+      return { action: "HELP", reply: "Tell me two campus hubs, like “Book from The Yard to Busch Student Center.”", pickupHubId: null, dropoffHubId: null };
+    }
+    return {
+      action: "BOOK_RIDE",
+      reply: `Booking your ride from ${matches[0].name} to ${matches[1].name}.`,
+      pickupHubId: matches[0].id,
+      dropoffHubId: matches[1].id,
+    };
+  }
+  if (matches.length !== 1) {
+    return { action: "HELP", reply: "Tell me one destination, like “Find rides ending at Cook Campus Center.”", pickupHubId: null, dropoffHubId: null };
+  }
+  return {
+    action: "WATCH_RIDES",
+    reply: `Watching for rides ending at ${matches[0].name}.`,
+    pickupHubId: null,
+    dropoffHubId: matches[0].id,
+  };
 }
 
 function fareFor(fromHubId: string, toHubId: string): FareBreakdown {
@@ -1276,5 +1329,10 @@ export const mockApi: ApiClient = {
       grossToday: r2(done.reduce((s, r) => s + r.fare.total, 0)),
       marginToday: r2(done.reduce((s, r) => s + r.fare.platformMargin, 0)),
     };
+  },
+
+  async assistantCommand(message) {
+    await latency();
+    return mockAssistantCommand(message);
   },
 };

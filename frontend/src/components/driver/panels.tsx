@@ -20,7 +20,7 @@ const miles = (m: number) => `${(m / 1609.34).toFixed(1)} mi`;
 // ---------------------------------------------------------------- home (offline / online)
 
 export function DriverHomePanel({ flow, firstName }: { flow: DriverFlowState; firstName?: string }) {
-  const { profile, earnings, toggling } = flow;
+  const { profile, earnings, toggling, watchedHub } = flow;
   const online = !!profile?.isOnline;
   const { problem, offline } = useConnectionProblem();
   const cutOff = online && problem;
@@ -29,7 +29,7 @@ export function DriverHomePanel({ flow, firstName }: { flow: DriverFlowState; fi
       <div>
         <p className="eyebrow text-ink-muted">Driver mode</p>
         <h1 className="mt-1 text-title text-ink">
-          {cutOff ? "Reconnecting…" : online ? "Finding you a trip" : `Ready to drive${firstName ? `, ${firstName}` : ""}?`}
+          {cutOff ? "Reconnecting…" : watchedHub ? `Watching for rides to ${watchedHub.name}` : online ? "Finding you a trip" : `Ready to drive${firstName ? `, ${firstName}` : ""}?`}
         </h1>
         {cutOff && (
           <p role="status" className="mt-1 flex items-start gap-1.5 text-label font-normal text-ink">

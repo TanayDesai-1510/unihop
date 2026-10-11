@@ -236,6 +236,43 @@ export function useRideFlow({ initialRideId }: { initialRideId?: string } = {}) 
     }
   }, [pickupId, dropoffId, methodId, useCredits, requesting, adoptRide]);
 
+  const bookFromAssistant = useCallback(
+    async (assistantPickupId: string, assistantDropoffId: string) => {
+      if (requesting) throw new Error("A ride request is already being sent.");
+      setPickupId(assistantPickupId);
+      setDropoffId(assistantDropoffId);
+      setQuote(null);
+      setRequestError(null);
+      setRequesting(true);
+      try {
+        const created = await api.createRide({
+          pickupHubId: assistantPickupId,
+          dropoffHubId: assistantDropoffId,
+          useCredits: true,
+        });
+        adoptRide(created);
+        setRequestedAt(Date.now());
+        haptic("tick");
+      } catch (caught) {
+        if (caught instanceof ApiRequestError && caught.code === "ACTIVE_RIDE_EXISTS") {
+          const active = await api.getActiveRide().catch(() => null);
+          if (active) {
+            adoptRide(active);
+            return;
+          }
+        }
+        let message = caught instanceof ApiRequestError ? caught.message : "Something went wrong. Try again.";
+        if (caught instanceof ApiRequestError && caught.code === "PAYMENT_DECLINED") message = declineMessage(caught.declineCode);
+        if (caught instanceof ApiRequestError && caught.code === "PAYMENT_METHOD_REQUIRED") message = "Add a payment method before asking Claude to book a ride.";
+        setRequestError({ code: caught instanceof ApiRequestError ? caught.code : "INTERNAL_ERROR", message });
+        throw new Error(message);
+      } finally {
+        setRequesting(false);
+      }
+    },
+    [requesting, adoptRide],
+  );
+
   const cancel = useCallback(async () => {
     if (!ride) return;
     try {
@@ -316,13 +353,14 @@ export function useRideFlow({ initialRideId }: { initialRideId?: string } = {}) 
       toConfirm: () => setStep("confirm"),
       chooseDropoff,
       choosePickup,
+      bookFromAssistant,
       request,
       cancel,
       reset,
       retry,
       rate,
     }),
-    [phase, hubs, hubsError, loadHubs, resuming, pickup, dropoff, quote, methods, method, credits, useCredits, ride, driverPos, etaSeconds, requesting, requestError, requestedAt, rated, chooseDropoff, choosePickup, request, cancel, reset, retry, rate],
+    [phase, hubs, hubsError, loadHubs, resuming, pickup, dropoff, quote, methods, method, credits, useCredits, ride, driverPos, etaSeconds, requesting, requestError, requestedAt, rated, chooseDropoff, choosePickup, bookFromAssistant, request, cancel, reset, retry, rate],
   );
 }
 

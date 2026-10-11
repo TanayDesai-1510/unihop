@@ -5,6 +5,7 @@ import { mockApi } from "@/mocks/api";
 import type {
   AddPaymentMethodBody,
   AdminStats,
+  AssistantCommand,
   ApiError,
   AuthResponse,
   CardToken,
@@ -99,6 +100,8 @@ export interface ApiClient {
   getMyRides(mode: UserMode): Promise<RideSummary[]>;
   getReceipt(id: string): Promise<Receipt>;
   getAdminStats(): Promise<AdminStats>;
+  // Claude assistant [Hriday backend, Tanay frontend]
+  assistantCommand(message: string): Promise<AssistantCommand>;
 }
 
 // ---------- Real HTTP implementation ----------
@@ -184,6 +187,7 @@ export const realApi: ApiClient = {
   getMyRides: (mode) => request("GET", a(`/api/me/rides?mode=${mode}`)),
   getReceipt: (id) => request("GET", a(`/api/rides/${enc(id)}/receipt`)),
   getAdminStats: () => request("GET", a("/api/admin/stats")),
+  assistantCommand: (message) => request("POST", a("/api/assistant/commands"), { message }),
 };
 
 export const api: ApiClient = USE_MOCKS ? mockApi : realApi;
