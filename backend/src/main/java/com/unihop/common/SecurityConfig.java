@@ -1,5 +1,8 @@
 package com.unihop.common;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.unihop.auth.JwtAuthenticationFilter;
+import com.unihop.auth.JwtSubjectReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -16,21 +20,35 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Security shell. Permits everything for now; Hriday adds the JWT filter and the public-route list
- * from contract section 2 (issue "JWT security config and public routes per contract").
+ * Stateless JWT security and public routes from contract section 2.
  */
 @Configuration
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtSubjectReader tokens,
+            ObjectMapper mapper, @Value("${app.auth.demo-header:false}") boolean demoEnabled) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .requestCache(AbstractHttpConfigurer::disable)
+                .addFilterBefore(new JwtAuthenticationFilter(tokens, demoEnabled, mapper),
+                        UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, error) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    mapper.writeValue(response.getOutputStream(),
+                            new ApiError("UNAUTHORIZED", "Authentication required"));
+                }))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**", "/api/health", "/api/hubs", "/api/share/**",
+                                "/mockpay/**", "/ws", "/swagger-ui.html", "/swagger-ui/**",
+                                "/v3/api-docs/**", "/actuator/health").permitAll()
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().permitAll())
                 .build();
     }
 

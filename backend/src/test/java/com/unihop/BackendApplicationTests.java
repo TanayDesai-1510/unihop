@@ -48,7 +48,8 @@ class BackendApplicationTests {
 
     @Test
     void unknownEndpointUsesContractErrorFormat() throws Exception {
-        mvc.perform(get("/api/does-not-exist"))
+        mvc.perform(get("/api/does-not-exist")
+                        .header("X-Demo-User", "00000000-0000-0000-0000-000000000101"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").exists());
