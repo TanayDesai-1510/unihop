@@ -40,4 +40,19 @@ public class RideController {
     public Ride get(@PathVariable UUID id) {
         return rides.get(id, currentUser.id());
     }
+
+    @PostMapping("/{id}/arrived")
+    public Ride arrived(@PathVariable UUID id) {
+        return rides.arrived(id, currentUser.id());
+    }
+
+    @PostMapping("/{id}/start")
+    public Ride start(@PathVariable UUID id, @Valid @RequestBody StartRideRequest body) {
+        return rides.start(id, currentUser.id(), body.pin());
+    }
+
+    @PostMapping("/{id}/complete")
+    public Ride complete(@PathVariable UUID id) {
+        return rides.complete(id, currentUser.id());
+    }
 }
