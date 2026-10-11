@@ -1,13 +1,13 @@
 {
   "name": "UniHop",
   "short_name": "UniHop",
-  "description": "Rutgers campus rides, every ride under $10.",
+  "description": "Every ride under $10. Students only.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
-  "theme_color": "#cc0033",
+  "theme_color": "#ffffff",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }

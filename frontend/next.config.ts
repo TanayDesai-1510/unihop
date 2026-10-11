@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // The floating dev badge covers the bottom nav; keep screens identical to production.
+  devIndicators: false,
   cacheComponents: true,
   partialPrefetching: true,
   reactCompiler: true,
