@@ -1,7 +1,6 @@
 package com.unihop.realtime;
 
-import com.unihop.common.ApiException;
-import org.springframework.beans.factory.ObjectProvider;
+import com.unihop.auth.JwtSubjectReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -22,13 +21,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     public WebSocketConfig(@Value("${app.cors.origins}") String origins,
                            @Value("${app.auth.demo-header:false}") boolean demoHeaderEnabled,
-                           ObjectProvider<StompTokenVerifier> tokenVerifier) {
+                           JwtSubjectReader jwtSubjectReader) {
         this.allowedOrigins = Arrays.stream(origins.split(",")).map(String::trim).toArray(String[]::new);
-        this.authInterceptor = new StompAuthInterceptor(
-                tokenVerifier.getIfAvailable(() -> token -> {
-                    throw ApiException.unauthorized("JWT verification is not available yet");
-                }),
-                demoHeaderEnabled);
+        this.authInterceptor = new StompAuthInterceptor(jwtSubjectReader::subject, demoHeaderEnabled);
     }
 
     @Override
