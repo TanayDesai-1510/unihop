@@ -22,6 +22,8 @@ Supporting types (also frozen): `com.unihop.pricing.FareBreakdown`, `com.unihop.
 
 Claude assistant ownership: Hriday owns `backend/src/**/com/unihop/assistant/**` and its tests. Tanay owns the assistant UI and client-side action runner in `frontend/**`. The assistant may return a bounded command, but all state-changing work still goes through the existing authenticated REST endpoints below.
 
+Voice (ElevenLabs) ownership: Dev owns `backend/src/**/com/unihop/voice/**` and its tests. Tanay owns audio capture, playback and the driver announcement UI in `frontend/**`. Voice never changes the assistant contract: the frontend sends the transcript to `POST /api/assistant/commands` exactly like typed input.
+
 Scaffold state: `CurrentUser` works with `X-Demo-User`. `FareService` is fully implemented against the `fares` table. `PaymentService` is a stub (`StubPaymentService`): authorize always succeeds, capture/void log and do nothing. Hriday replaces the stub.
 
 ---
@@ -62,6 +64,7 @@ Scaffold state: `CurrentUser` works with `X-Demo-User`. `FareService` is fully i
 | 409 | `ALREADY_RATED` | Rater already rated this ride |
 | 409 | `NOTHING_TO_CASH_OUT` | Earnings balance is 0 |
 | 503 | `ASSISTANT_UNAVAILABLE` | Claude is disabled, unavailable, times out, or returns an invalid response |
+| 503 | `VOICE_UNAVAILABLE` | ElevenLabs is not configured, unavailable, times out, is out of credits, or returns an invalid response |
 | 500 | `INTERNAL_ERROR` | Anything unexpected |
 
 ---
@@ -331,6 +334,11 @@ All 25 rows of the table in section 4 (both directions).
 - In RIDER mode, an unambiguous request to travel between two different hubs returns `BOOK_RIDE` with both hub ids. In DRIVER mode, an unambiguous request to find rides ending at a hub returns `WATCH_RIDES` with only `dropoffHubId`. A request to stop a driver watch returns `STOP_WATCHING`. Unsupported, mode-incompatible, or ambiguous requests return `HELP` with a clarification in `reply`; all hub fields are null and no state changes.
 - Missing configuration, provider errors/timeouts, or malformed provider output return 503 `ASSISTANT_UNAVAILABLE`. No action is executed on an error.
 
+### Voice (ElevenLabs) [Dev backend, Tanay frontend; stretch]
+- `POST /api/voice/transcribe` `multipart/form-data` with one part `audio` (webm, ogg, mp4/m4a, mpeg or wav; at most 1 MB and 15 seconds) → `VoiceTranscript`. Authenticated. The spoken language is detected automatically; `text` is in that language (no translation) and is `""` when no speech was found. Larger or unsupported audio: 400 `VALIDATION_ERROR`.
+- `POST /api/voice/speech` `{text, languageCode?}` → `200` with an `audio/mpeg` body. Authenticated. `text` is trimmed and must contain 1-300 characters (400 `VALIDATION_ERROR` otherwise); `languageCode` (ISO 639-1, e.g. `"es"`) is a hint for pronunciation. Identical `text` + `languageCode` is served from a server-side cache, so repeated phrases spend provider credits once.
+- Missing configuration, provider errors/timeouts, exhausted credits, or malformed provider output return 503 `VOICE_UNAVAILABLE`. Callers must treat voice as optional and fall back to text.
+
 ---
 
 ## 9. DTOs
@@ -360,6 +368,7 @@ All fields are required unless marked `?` (nullable, still present as `null`).
 - `ChatMessage` (stretch): id, senderId, body, createdAt
 - `AdminStats` (stretch): ridesToday, activeRides, driversOnline, grossToday, marginToday
 - `AssistantCommand` (stretch): action `AssistantAction`, reply, pickupHubId?, dropoffHubId?
+- `VoiceTranscript` (stretch): text, languageCode? (ISO 639-1, null when no speech was found)
 - `ApiError`: error, message, declineCode? (only on 402 `PAYMENT_DECLINED`)
 
 ---
@@ -412,10 +421,27 @@ All fields are required unless marked `?` (nullable, still present as `null`).
 
 ## 14. Claude assistant behavior (stretch)
 
-- The authenticated rider and driver landing/home surfaces expose one Claude button. Pressing it once opens the assistant and starts browser speech recognition when available. A typed-input fallback is always available. Raw microphone audio stays in the browser; only the transcript or typed message is sent to `/api/assistant/commands`.
+- The authenticated rider and driver landing/home surfaces expose one Claude button. Pressing it once opens the assistant and starts listening (section 15). A typed-input fallback is always available. Only the transcript or typed message is sent to `/api/assistant/commands`; recorded audio goes only to `POST /api/voice/transcribe` (section 15).
 - `BOOK_RIDE` is executed immediately without another confirmation by calling the existing `POST /api/rides` endpoint with the returned hub ids, `paymentMethodId = null`, `useCredits = true`, and null promo/schedule fields. The normal ride API remains authoritative for fare calculation, payment, active-ride checks, matching, and errors. On success the UI opens the active ride.
 - `WATCH_RIDES` immediately places the driver online through the existing availability endpoint if needed, using the browser's current geolocation. If location permission is unavailable or denied, the UI explains that the watch could not start and performs no offer action.
 - While a destination watch is active, the frontend consumes the existing driver offer WebSocket topic and `GET /api/drivers/me/offer` reconnect fallback. It declines live offers whose `dropoffHub.id` differs from the watched hub and accepts the first matching offer through the existing ride endpoints, without another confirmation. `OFFER_NOT_ACTIVE` is treated as a race and the watch continues; any other accept/decline error is shown to the driver.
 - A destination watch is scoped to the signed-in browser session and stored only in session storage so it survives a reload/reconnect. It stops after a matching offer is accepted, on `STOP_WATCHING`, logout, switching out of DRIVER mode, or the browser session ending.
 - The assistant never receives or gains direct access to JWTs, card/payment data, precise driver location, user profile data, databases, arbitrary URLs, or arbitrary application tools. It cannot create or accept a ride directly; it only returns `AssistantCommand`, and the existing endpoints enforce authorization and business rules.
 - Assistant messages and transcripts are not persisted and are excluded from application logs. The Anthropic API key is backend-only, supplied as `ANTHROPIC_API_KEY`, and never committed or exposed through `NEXT_PUBLIC_*`. The model is configurable with `ANTHROPIC_MODEL`.
+
+## 15. Voice: multilingual assistant and driver announcements (stretch)
+
+ElevenLabs (hackathon sponsor) provides speech-to-text and text-to-speech through the two `/api/voice` endpoints in section 8. Voice is always optional: on 503 `VOICE_UNAVAILABLE`, or when the browser cannot record, the UI falls back to browser speech recognition (using the device language, not a fixed `en-US`) and to on-screen text.
+
+**Multilingual assistant (voice in, voice out)**
+- The Claude button records up to 15 seconds of audio in the browser and sends it to `POST /api/voice/transcribe`. The returned `text`, in the speaker's own language, is sent unchanged to `POST /api/assistant/commands`; Claude understands and replies in that language. An empty `text` shows "I couldn't hear that" and sends nothing.
+- The assistant's `reply` is spoken with `POST /api/voice/speech`, passing the transcript's `languageCode`, and is also shown as text.
+
+**Driver announcements**
+- On the driver screens the app speaks short fixed phrases through `POST /api/voice/speech`: a new offer ("New trip to {dropoff hub name}. You earn {driverPayout}."), an `OFFER_REVOKED` ("The rider cancelled."), and completion ("Trip complete. You earned {driverPayout}.").
+- Phrases contain only hub names and amounts, never a PIN or a rider's name, so they stay few and cacheable. A sound on/off toggle on the driver home is stored per device (local storage) and defaults to on.
+
+**Privacy and cost**
+- Audio is sent only from the browser to the UniHop backend and from there to ElevenLabs. It is never stored or logged; transcripts are not persisted and are excluded from application logs (as in section 14).
+- The ElevenLabs key is backend-only, supplied as `ELEVENLABS_API_KEY`, and never committed or exposed through `NEXT_PUBLIC_*`. Voice, speech-to-text model and text-to-speech model are configurable with `ELEVENLABS_VOICE_ID`, `ELEVENLABS_STT_MODEL` and `ELEVENLABS_TTS_MODEL`.
+- Credit guardrails (free tier): 15-second recordings, 300-character speech, and the server-side speech cache.
