@@ -20,6 +20,7 @@ import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
 import { fadeUI, pressable, springHop, springSmooth } from "@/lib/motion";
 import { clockAt, PICKUP_ESTIMATE_MIN, tripEstimateSeconds, type RideFlow } from "./useRideFlow";
+import { MethodSheet } from "./MethodSheet";
 import { CompactTicket, DriverRow, OptionRow, PaymentLine, PinBoxes, RoundAction, RouteSummary } from "./parts";
 
 const ROAD_STEPS = [
@@ -132,14 +133,10 @@ export function HomePanel({ flow, onExpand }: { flow: RideFlow; onExpand: () => 
 
 export function OptionsPanel({ flow }: { flow: RideFlow }) {
   const { pickup, dropoff, quote, method, methods, credits, useCredits } = flow;
+  const [picking, setPicking] = useState(false);
   if (!pickup || !dropoff) return null;
   const tripS = tripEstimateSeconds(pickup, dropoff);
   const dropoffAt = clockAt((PICKUP_ESTIMATE_MIN * 60 + tripS) * 1000);
-  const nextMethod = () => {
-    if (!methods?.length) return;
-    const i = methods.findIndex((m) => m.id === method?.id);
-    flow.setMethodId(methods[(i + 1) % methods.length].id);
-  };
   const cashCovers = quote ? Math.min(credits, quote.total) : 0;
 
   return (
@@ -152,9 +149,9 @@ export function OptionsPanel({ flow }: { flow: RideFlow }) {
       <OptionRow fare={quote} pickupMin={PICKUP_ESTIMATE_MIN} dropoffAt={dropoffAt} layoutDependency={flow.phase} />
       <div className="flex flex-col divide-y divide-line">
         {method ? (
-          <PaymentLine label={method.label} brand={method.brand} type={method.type} onChange={methods && methods.length > 1 ? nextMethod : undefined} />
+          <PaymentLine label={method.nickname ?? method.label} brand={method.brand} type={method.type} onChange={() => setPicking(true)} />
         ) : methods ? (
-          <Link href="/payment/add" className="py-3 text-body font-semibold text-brand">
+          <Link href="/payment/add?next=/rider" className="py-3 text-body font-semibold text-brand">
             Add a payment method
           </Link>
         ) : (
@@ -178,6 +175,7 @@ export function OptionsPanel({ flow }: { flow: RideFlow }) {
       <Button variant="primary" onClick={flow.toConfirm} disabledReason={quote ? null : "Getting your fare…"}>
         Confirm pickup
       </Button>
+      {methods && <MethodSheet open={picking} onClose={() => setPicking(false)} methods={methods} selectedId={method?.id ?? null} onSelect={flow.setMethodId} />}
     </div>
   );
 }

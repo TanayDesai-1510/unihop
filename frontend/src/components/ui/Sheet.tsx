@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion, useDragControls, useReducedMotion } from "motion/react";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import { fadeUI, projectMomentum, springSmooth } from "@/lib/motion";
 
@@ -60,8 +61,11 @@ export function Sheet({ open, onClose, title, description, children, tone = "def
   }, [open, onClose]);
 
   const dark = tone === "dark";
+  // Portaled to <body>: a transformed ancestor (the ride GlassSheet) would otherwise trap `fixed`.
+  const mounted = useSyncExternalStore(noop, () => true, () => false);
+  if (!mounted) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[900] mx-auto flex max-w-[430px] flex-col justify-end">
@@ -111,6 +115,9 @@ export function Sheet({ open, onClose, title, description, children, tone = "def
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
+
+const noop = () => () => {};
