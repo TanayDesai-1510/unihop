@@ -11,7 +11,6 @@ import { RouteSummary } from "@/components/rider/parts";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { pressable } from "@/lib/motion";
-import type { Hub, Ride } from "@/lib/types";
 import { OnlineToggle } from "./OnlineToggle";
 import type { DriverFlowState } from "./useDriverFlow";
 
@@ -85,23 +84,6 @@ export function OfferPanel({ flow }: { flow: DriverFlowState }) {
           Accept
         </Button>
       </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------- after accepting (pickup leg)
-
-export function PickupPanel({ ride, pickup }: { ride: Ride; pickup: Hub }) {
-  return (
-    <div className="flex flex-col gap-4 pb-2">
-      <div>
-        <p className="eyebrow text-ink-muted">Trip accepted</p>
-        <h2 className="mt-1 text-title text-ink">Head to {pickup.name}</h2>
-        <p className="mt-1 text-label font-normal text-ink-muted">
-          Pick up {ride.rider.name.split(" ")[0]} · rider pays <span className="tnum">${ride.fare.total.toFixed(2)}</span>
-        </p>
-      </div>
-      <RouteSummary pickup={ride.pickupHub} dropoff={ride.dropoffHub} />
     </div>
   );
 }

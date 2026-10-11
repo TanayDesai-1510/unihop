@@ -8,6 +8,7 @@ import { haptic } from "@/lib/haptics";
 import type { DriverProfile, Earnings, Hub, LatLng, Ride, RideOffer, RideStatus } from "@/lib/types";
 import { isOfferRevoked } from "@/lib/types";
 import { realtime } from "@/lib/ws";
+import { useDriverLocation } from "./useDriverLocation";
 
 export type DriverPhase = "loading" | "not-driver" | "offline" | "online" | "offer" | "pickup" | "arrived" | "trip" | "done" | "ended";
 
@@ -60,6 +61,11 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
   const [offer, setOffer] = useState<RideOffer | null>(null);
   const [responding, setResponding] = useState<"accept" | "decline" | null>(null);
   const [ride, setRide] = useState<Ride | null>(null);
+  const [acting, setActing] = useState<"arrived" | "start" | "complete" | "cancel" | null>(null);
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinTries, setPinTries] = useState(0);
+  const [rated, setRated] = useState(false);
+  const [legStart, setLegStart] = useState<LatLng | null>(null);
   const lastStatus = useRef<RideStatus | null>(null);
   const userId = user?.id;
 
@@ -163,6 +169,7 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
     try {
       const r = await api.acceptRide(offer.rideId);
       haptic("accepted");
+      setLegStart(position);
       lastStatus.current = r.status;
       setRide(r);
       setOffer(null);
@@ -173,7 +180,7 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
     } finally {
       setResponding(null);
     }
-  }, [offer, responding, toast]);
+  }, [offer, responding, toast, position]);
 
   const decline = useCallback(async () => {
     if (!offer || responding) return;
@@ -193,8 +200,63 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
     toast.show({ tone: "info", message: "Offer expired. Stay online for the next one." });
   }, [toast]);
 
+  // ---- ride actions ----
+  const act = useCallback(
+    async (kind: "arrived" | "start" | "complete" | "cancel", call: () => Promise<Ride>) => {
+      if (acting) return;
+      setActing(kind);
+      try {
+        const r = await call();
+        lastStatus.current = r.status;
+        setRide(r);
+        if (kind === "complete") haptic("success");
+        if (kind === "start") setPinError(null);
+      } catch (e) {
+        if (e instanceof ApiRequestError && e.code === "INVALID_PIN") {
+          haptic("error");
+          setPinError("That PIN doesn't match. Ask the rider to read it again.");
+          setPinTries((n) => n + 1);
+        } else {
+          toast.show({ tone: "error", message: e instanceof ApiRequestError ? e.message : "Something went wrong. Try again." });
+        }
+      } finally {
+        setActing(null);
+      }
+    },
+    [acting, toast],
+  );
+  const markArrived = useCallback(() => ride && act("arrived", () => api.markArrived(ride.id)), [ride, act]);
+  const startTrip = useCallback((pin: string) => ride && act("start", () => api.startRide(ride.id, pin)), [ride, act]);
+  const completeTrip = useCallback(() => ride && act("complete", () => api.completeRide(ride.id)), [ride, act]);
+  const cancelTrip = useCallback(() => ride && act("cancel", () => api.cancelRide(ride.id, "Driver cancelled")), [ride, act]);
+  const clearPinError = useCallback(() => setPinError(null), []);
+
+  const rate = useCallback(
+    async (stars: 1 | 2 | 3 | 4 | 5) => {
+      if (!ride || rated) return;
+      try {
+        await api.rateRide(ride.id, { stars });
+        setRated(true);
+      } catch (e) {
+        if (e instanceof ApiRequestError && e.code === "ALREADY_RATED") setRated(true);
+        else toast.show({ tone: "error", message: "Couldn't save your rating. Try again." });
+      }
+    },
+    [ride, rated, toast],
+  );
+
+  // ---- where the car is during the ride ----
+  const leg = ride?.status === "ACCEPTED" ? "pickup" : ride?.status === "IN_PROGRESS" ? "trip" : null;
+  const legFrom = leg === "trip" && ride ? { lat: ride.pickupHub.lat, lng: ride.pickupHub.lng } : legStart ?? position;
+  const legTo = ride ? (leg === "trip" ? { lat: ride.dropoffHub.lat, lng: ride.dropoffHub.lng } : { lat: ride.pickupHub.lat, lng: ride.pickupHub.lng }) : null;
+  const onMove = useCallback((p: LatLng) => setPosition(p), []);
+  const { demo: demoGps } = useDriverLocation({ leg, from: legFrom, to: legTo, onMove });
+
   const finish = useCallback(() => {
     setRide(null);
+    setRated(false);
+    setLegStart(null);
+    setPinError(null);
     lastStatus.current = null;
     api.getEarnings().then(setEarnings).catch(() => {});
     api.getMyDriverProfile().then(setProfile).catch(() => {});
@@ -208,8 +270,11 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
   else phase = profile.isOnline ? "online" : "offline";
 
   return useMemo(
-    () => ({ phase, profile, hubs, earnings, position, toggling, offer, responding, ride, setRide, toggleOnline, accept, decline, expire, finish }),
-    [phase, profile, hubs, earnings, position, toggling, offer, responding, ride, toggleOnline, accept, decline, expire, finish],
+    () => ({
+      phase, profile, hubs, earnings, position, toggling, offer, responding, ride, setRide, toggleOnline, accept, decline, expire, finish,
+      acting, pinError, pinTries, clearPinError, rated, demoGps, markArrived, startTrip, completeTrip, cancelTrip, rate,
+    }),
+    [phase, profile, hubs, earnings, position, toggling, offer, responding, ride, toggleOnline, accept, decline, expire, finish, acting, pinError, pinTries, clearPinError, rated, demoGps, markArrived, startTrip, completeTrip, cancelTrip, rate],
   );
 }
 

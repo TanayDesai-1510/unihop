@@ -506,7 +506,7 @@ body {
 
 /* Ride map: keep Leaflet's top controls (attribution) below the floating top bar. */
 .ride-map .leaflet-top {
-  top: calc(env(safe-area-inset-top) + 66px);
+  top: calc(env(safe-area-inset-top) + var(--map-top-chrome, 66px));
 }
 
 

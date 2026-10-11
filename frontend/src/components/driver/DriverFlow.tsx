@@ -10,7 +10,8 @@ import { RideMap, type MapPhase } from "@/components/map";
 import type { SnapPoint } from "@/components/ui/BottomSheet";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { fadeUI, springSmooth, stateSwap } from "@/lib/motion";
-import { DriverHomePanel, NotDriverPanel, OfferPanel, PickupPanel } from "./panels";
+import { DriverHomePanel, NotDriverPanel, OfferPanel } from "./panels";
+import { DriverDonePanel, DriverEndedPanel, DriverPickupPanel, DriverPinPanel, DriverTripPanel, NavCard } from "./ridePanels";
 import { useDriverFlow, type DriverPhase } from "./useDriverFlow";
 
 const DETENTS: Record<DriverPhase, SnapPoint[]> = {
@@ -19,10 +20,10 @@ const DETENTS: Record<DriverPhase, SnapPoint[]> = {
   offline: [340],
   online: [340],
   offer: [470],
-  pickup: [300, "88%"],
-  arrived: [420, "88%"],
-  trip: [320, "88%"],
-  done: ["86%"],
+  pickup: [404, "88%"],
+  arrived: [470, "88%"],
+  trip: [290, "88%"],
+  done: ["88%"],
   ended: [300],
 };
 
@@ -76,13 +77,25 @@ export function DriverFlow({ initialRideId }: { initialRideId?: string }) {
         return <DriverHomePanel flow={flow} firstName={user?.name.split(" ")[0]} />;
       case "offer":
         return <OfferPanel flow={flow} />;
-      default:
-        return ride ? <PickupPanel ride={ride} pickup={ride.pickupHub} /> : null;
+      case "pickup":
+        return ride ? <DriverPickupPanel flow={flow} ride={ride} /> : null;
+      case "arrived":
+        return ride ? <DriverPinPanel flow={flow} ride={ride} /> : null;
+      case "trip":
+        return ride ? <DriverTripPanel flow={flow} ride={ride} /> : null;
+      case "done":
+        return ride ? <DriverDonePanel flow={flow} ride={ride} /> : null;
+      case "ended":
+        return <DriverEndedPanel flow={flow} />;
     }
   })();
 
   return (
-    <div className="ride-map absolute inset-0 overflow-hidden bg-surface">
+    <div
+      className="ride-map absolute inset-0 overflow-hidden bg-surface"
+      // The nav card is taller than the logo chip: keep the map attribution clear of it.
+      style={{ ["--map-top-chrome" as string]: ride && ["pickup", "arrived", "trip"].includes(flow.phase) ? "102px" : "66px" }}
+    >
       <RideMap
         hubs={flow.hubs}
         pickupId={pickupId}
@@ -94,9 +107,15 @@ export function DriverFlow({ initialRideId }: { initialRideId?: string }) {
       />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[600] flex items-center justify-between gap-3 px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
-        <div className="glass-chip pointer-events-auto flex h-12 items-center rounded-full pl-2 pr-4">
-          <LogoLockup size={32} />
-        </div>
+        {ride && ["pickup", "arrived", "trip"].includes(flow.phase) ? (
+          <div className="pointer-events-auto w-full">
+            <NavCard ride={ride} demoGps={flow.demoGps} />
+          </div>
+        ) : (
+          <div className="glass-chip pointer-events-auto flex h-12 items-center rounded-full pl-2 pr-4">
+            <LogoLockup size={32} />
+          </div>
+        )}
         <AnimatePresence initial={false}>
           {!inRide && !flow.profile?.isOnline && (
             <motion.div
