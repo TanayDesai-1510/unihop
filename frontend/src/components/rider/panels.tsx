@@ -154,7 +154,7 @@ export function OptionsPanel({ flow }: { flow: RideFlow }) {
         {method ? (
           <PaymentLine label={method.label} brand={method.brand} type={method.type} onChange={methods && methods.length > 1 ? nextMethod : undefined} />
         ) : methods ? (
-          <Link href="/payment/add" className="py-3 text-body font-semibold text-brand">
+          <Link href="/payment/add?next=/rider" className="py-3 text-body font-semibold text-brand">
             Add a payment method
           </Link>
         ) : (
@@ -224,7 +224,7 @@ export function ConfirmPanel({ flow }: { flow: RideFlow }) {
                 <button type="button" onClick={flow.toOptions} className="text-label font-semibold text-brand">
                   Change payment
                 </button>
-                <Link href="/payment/add" className="text-label font-semibold text-brand">
+                <Link href="/payment/add?next=/rider" className="text-label font-semibold text-brand">
                   Add a card
                 </Link>
               </div>
