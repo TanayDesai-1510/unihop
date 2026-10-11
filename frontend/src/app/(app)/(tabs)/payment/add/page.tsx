@@ -1,5 +1,10 @@
-import { RouteStub } from "@/components/RouteStub";
+import { Suspense } from "react";
+import { AddCardScreen } from "@/components/payment/AddCardScreen";
 
 export default function AddCardPage() {
-  return <RouteStub title="Add card" issue={41} scene="ticket" headline="Add a card" />;
+  return (
+    <Suspense fallback={<div className="absolute inset-0 bg-bg" />}>
+      <AddCardScreen />
+    </Suspense>
+  );
 }

@@ -42,6 +42,17 @@
   --wallet-dark: #000000;
   --wallet-dark-ink: #ffffff;
 
+  /* Card preview art per brand (physical card colors, not UI chrome), same in both modes. */
+  --card-art-unknown: #2a3550;
+  --card-art-visa: #0d2c6c;
+  --card-art-mastercard: #24262c;
+  --card-art-amex: #1d5c66;
+  --card-art-discover: #4a3a2e;
+  --card-art-ink: #ffffff;
+  --card-chip: linear-gradient(135deg, #e6c66d, #b8923a);
+  --card-stripe: rgba(0, 0, 0, 0.75);
+  --card-signature: rgba(255, 255, 255, 0.85);
+
   /* Motion (DESIGN.md section 7). */
   --ease-out-ui: cubic-bezier(0.2, 0.8, 0.2, 1);
 
@@ -254,7 +265,9 @@ body {
   margin-right: 0.04em;
 }
 
-:focus-visible {
+/* Zero-specificity default ring, so components that draw their own focus ring (inputs) can
+   switch it off with a utility. */
+:where(:focus-visible) {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }

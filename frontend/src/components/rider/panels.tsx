@@ -222,7 +222,7 @@ export function ConfirmPanel({ flow }: { flow: RideFlow }) {
                 <button type="button" onClick={flow.toOptions} className="text-label font-semibold text-brand">
                   Change payment
                 </button>
-                <Link href="/payment/add" className="text-label font-semibold text-brand">
+                <Link href="/payment/add?next=/rider" className="text-label font-semibold text-brand">
                   Add a card
                 </Link>
               </div>
