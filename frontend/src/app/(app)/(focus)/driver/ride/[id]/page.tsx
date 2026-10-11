@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { ParamRouteStub } from "@/components/ParamRouteStub";
+import { DriverRideScreen } from "@/components/driver/DriverRideScreen";
 
 export default function DriverRidePage() {
   return (
-    <Suspense fallback={null}>
-      <ParamRouteStub title="Driver ride" issue={38} back={{ href: "/driver", label: "Back to driver home" }} />
+    <Suspense fallback={<div className="absolute inset-0 bg-surface" />}>
+      <DriverRideScreen />
     </Suspense>
   );
 }
