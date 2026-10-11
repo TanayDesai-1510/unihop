@@ -1,5 +1,5 @@
-import { RouteStub } from "@/components/RouteStub";
+import { HistoryScreen } from "@/components/history/HistoryScreen";
 
 export default function HistoryPage() {
-  return <RouteStub title="Activity" issue={44} scene="pin" headline="Your trips" />;
+  return <HistoryScreen />;
 }
