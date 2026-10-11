@@ -54,6 +54,12 @@ public class RideRepository {
                 WHERE id = ?""", id);
     }
 
+    /** REQUESTED -> ACCEPTED with the driver and PIN. Caller holds the row lock and has checked the transition. */
+    public void markAccepted(UUID id, UUID driverId, String pin) {
+        jdbc.update("UPDATE rides SET status = 'ACCEPTED', driver_id = ?, pin = ?, accepted_at = now() WHERE id = ?",
+                driverId, pin, id);
+    }
+
     /** The user's non-terminal ride as rider or driver, newest first. */
     public Optional<RideRow> findActiveFor(UUID userId) {
         return jdbc.query("SELECT * FROM rides WHERE (rider_id = ? OR driver_id = ?) AND status IN " + ACTIVE_STATUSES

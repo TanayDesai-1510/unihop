@@ -83,6 +83,45 @@ public class OfferRepository {
         return new Inserted(id, expires.toInstant());
     }
 
+    /** An offer row as accept/decline/recovery need it. {@code live} = OFFERED and not past {@code expires_at}. */
+    public record OfferRow(UUID id, UUID rideId, UUID driverId, String status, Instant expiresAt, boolean live) {
+    }
+
+    private static final String OFFER_COLUMNS =
+            "id, ride_id, driver_id, status, expires_at, (status = 'OFFERED' AND expires_at > now()) AS live";
+
+    private static OfferRow mapOffer(java.sql.ResultSet rs, int i) throws java.sql.SQLException {
+        return new OfferRow(rs.getObject("id", UUID.class), rs.getObject("ride_id", UUID.class),
+                rs.getObject("driver_id", UUID.class), rs.getString("status"),
+                rs.getObject("expires_at", OffsetDateTime.class).toInstant(), rs.getBoolean("live"));
+    }
+
+    /** The driver's most recent offer for this ride, row-locked so accept/decline cannot race the sweeper. */
+    java.util.Optional<OfferRow> latestForUpdate(UUID rideId, UUID driverId) {
+        return jdbc.query("SELECT " + OFFER_COLUMNS + " FROM ride_offers WHERE ride_id = ? AND driver_id = ?"
+                + " ORDER BY offered_at DESC LIMIT 1 FOR UPDATE", OfferRepository::mapOffer, rideId, driverId)
+                .stream().findFirst();
+    }
+
+    /** The driver's live offer, if any. */
+    java.util.Optional<OfferRow> liveFor(UUID driverId) {
+        return jdbc.query("SELECT " + OFFER_COLUMNS + " FROM ride_offers WHERE driver_id = ? AND status = 'OFFERED'"
+                + " AND expires_at > now() ORDER BY offered_at DESC LIMIT 1", OfferRepository::mapOffer, driverId)
+                .stream().findFirst();
+    }
+
+    /** OFFERED -> ACCEPTED or DECLINED. */
+    void respond(UUID offerId, String status) {
+        jdbc.update("UPDATE ride_offers SET status = ?, responded_at = now() WHERE id = ?", status, offerId);
+    }
+
+    /** The driver's current location, if reported. */
+    java.util.Optional<double[]> driverLocation(UUID driverId) {
+        return jdbc.query("SELECT current_lat, current_lng FROM driver_profiles WHERE user_id = ?"
+                        + " AND current_lat IS NOT NULL AND current_lng IS NOT NULL",
+                (rs, i) -> new double[]{rs.getDouble(1), rs.getDouble(2)}, driverId).stream().findFirst();
+    }
+
     /** Atomically expires every overdue OFFERED offer; the row locks make concurrent sweeps safe. */
     List<Expired> expireDue() {
         return jdbc.query("""

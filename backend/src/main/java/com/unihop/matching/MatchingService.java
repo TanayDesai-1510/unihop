@@ -96,12 +96,16 @@ public class MatchingService {
 
     private void offer(RideRow ride, Hub pickup, OfferRepository.Candidate candidate) {
         OfferRepository.Inserted inserted = offers.insert(ride.id(), candidate.driverId());
-        RideParticipant rider = views.participant(ride.riderId());
-        RideOffer offer = new RideOffer(inserted.offerId(), ride.id(), pickup, views.hub(ride.dropoffHubId()),
-                ride.fare(), rider.name(), rider.ratingAvg(), Math.round(distance(candidate, pickup)),
-                inserted.expiresAt());
+        RideOffer offer = rideOffer(inserted.offerId(), ride, pickup, distance(candidate, pickup), inserted.expiresAt());
         AfterCommit.run(() -> publisher.offer(candidate.driverId(), offer));
         log.info("Ride {} offered to driver {} until {}", ride.id(), candidate.driverId(), inserted.expiresAt());
+    }
+
+    /** Builds the contract {@code RideOffer} payload. */
+    RideOffer rideOffer(UUID offerId, RideRow ride, Hub pickup, double distanceMeters, java.time.Instant expiresAt) {
+        RideParticipant rider = views.participant(ride.riderId());
+        return new RideOffer(offerId, ride.id(), pickup, views.hub(ride.dropoffHubId()), ride.fare(), rider.name(),
+                rider.ratingAvg(), Math.round(distanceMeters), expiresAt);
     }
 
     private static double distance(OfferRepository.Candidate candidate, Hub pickup) {
