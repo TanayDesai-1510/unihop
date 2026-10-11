@@ -58,7 +58,7 @@ export function CarAvatar({ name, carColor, className }: { name: string; carColo
 }
 
 /** Pickup → dropoff with route dots and a dashed lane between them. */
-export function RouteSummary({ pickup, dropoff, compact = false, pickupNote, dropoffNote }: { pickup: Hub; dropoff: Hub; compact?: boolean; pickupNote?: ReactNode; dropoffNote?: ReactNode }) {
+export function RouteSummary({ pickup, dropoff, compact = false, pickupNote, dropoffNote }: { pickup: Pick<Hub, "name">; dropoff: Pick<Hub, "name">; compact?: boolean; pickupNote?: ReactNode; dropoffNote?: ReactNode }) {
   return (
     <div className="grid grid-cols-[20px_1fr] gap-x-3">
       <span className="flex justify-center pt-[7px]">
