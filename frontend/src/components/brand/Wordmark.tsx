@@ -2,15 +2,15 @@ import { cn } from "@/lib/cn";
 import { Logo } from "./Logo";
 
 const SIZES = {
-  sm: "text-[18px] leading-6",
-  md: "text-title",
-  lg: "text-[32px] leading-9",
+  sm: "text-[21px] leading-6",
+  md: "text-[28px] leading-8",
+  lg: "text-[40px] leading-[44px]",
 } as const;
 
-/** "UniHop" in Geist 700: "Uni" in --brand (--ink in dark mode), "Hop" in --accent (DESIGN.md section 2). */
+/** "UniHop" in Bricolage Grotesque 800, tight tracking: "Uni" in --brand (--ink in dark), "Hop" in --accent. */
 export function Wordmark({ size = "md", onBrand = false, className }: { size?: keyof typeof SIZES; onBrand?: boolean; className?: string }) {
   return (
-    <span className={cn("font-bold tracking-[-0.02em]", SIZES[size], className)}>
+    <span className={cn("font-display font-extrabold tracking-[-0.045em] [font-optical-sizing:auto]", SIZES[size], className)}>
       <span className={onBrand ? "text-on-brand" : "text-brand dark:text-ink"}>Uni</span>
       <span className="text-accent">Hop</span>
     </span>

@@ -1,18 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Geist_Mono, Instrument_Sans } from "next/font/google";
 import { Providers } from "@/components/app/Providers";
 import { Splash, splashBootScript } from "@/components/brand/Splash";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// DESIGN.md section 3: three fonts, one job each, self-hosted by next/font (no layout shift).
+const display = Bricolage_Grotesque({
+  variable: "--font-display-face",
   subsets: ["latin"],
+  axes: ["opsz"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const text = Instrument_Sans({
+  variable: "--font-text-face",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const mono = Geist_Mono({
+  variable: "--font-mono-face",
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -43,7 +54,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
+    <html lang="en" className={`${display.variable} ${text.variable} ${mono.variable} antialiased`} suppressHydrationWarning>
       <head>
         {/* Marks repeat visits before first paint so the splash never flashes. */}
         <script dangerouslySetInnerHTML={{ __html: splashBootScript }} />

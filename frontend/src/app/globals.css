@@ -134,21 +134,14 @@
   --color-brand-logo: var(--brand-logo);
   --color-route-casing: var(--route-casing);
 
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* DESIGN.md section 3: Bricolage Grotesque (display), Instrument Sans (text), Geist Mono. */
+  --font-sans: var(--font-text-face), system-ui, sans-serif;
+  --font-display: var(--font-display-face), var(--font-text-face), system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
 
-  /* Type scale (DESIGN.md section 3). Tracking tightens as size grows. */
-  --text-display: 40px;
-  --text-display--line-height: 44px;
-  --text-display--letter-spacing: -0.02em;
-  --text-display--font-weight: 700;
-  --text-title: 24px;
-  --text-title--line-height: 30px;
-  --text-title--letter-spacing: -0.01em;
-  --text-title--font-weight: 700;
+  /* Text styles (Instrument Sans). Hero / Display / Title are @utility below (display face). */
   --text-headline: 18px;
   --text-headline--line-height: 24px;
-  --text-headline--letter-spacing: -0.005em;
   --text-headline--font-weight: 600;
   --text-body: 16px;
   --text-body--line-height: 24px;
@@ -157,8 +150,7 @@
   --text-label--font-weight: 500;
   --text-caption: 12px;
   --text-caption--line-height: 16px;
-  --text-caption--letter-spacing: 0.01em;
-  --text-caption--font-weight: 500;
+  --text-caption--font-weight: 600;
 
   /* Radius (DESIGN.md section 4). */
   --radius-chip: 12px;
@@ -183,7 +175,7 @@ html {
 body {
   background: var(--surface);
   color: var(--ink);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-text-face), system-ui, sans-serif;
   font-size: 16px;
   line-height: 24px;
   overscroll-behavior-y: none;
@@ -192,6 +184,66 @@ body {
 /* Every price, ETA, timer and earnings figure. */
 .tnum {
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Type scale (DESIGN.md section 3) ---------- */
+/* Display face with optical sizing; tracking tightens as size grows. Numbers are tabular. */
+@utility text-hero {
+  font-family: var(--font-display);
+  font-size: 48px;
+  line-height: 48px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-optical-sizing: auto;
+  font-variant-numeric: tabular-nums;
+}
+@utility text-display {
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  font-optical-sizing: auto;
+  font-variant-numeric: tabular-nums;
+}
+@utility text-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-optical-sizing: auto;
+}
+/* Uppercase eyebrow: Caption + 0.08em tracking. */
+@utility eyebrow {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Plates, PIN, card numbers, timers. */
+@utility font-mono-num {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Price tag: "$" and cents at ~55% size, top-aligned (components/brand/Price.tsx). */
+.price {
+  display: inline-flex;
+  align-items: flex-start;
+  font-variant-numeric: tabular-nums;
+}
+.price .price-minor {
+  font-size: 0.55em;
+  line-height: 1;
+  margin-top: 0.12em;
+  letter-spacing: -0.01em;
+}
+.price .price-symbol {
+  margin-right: 0.04em;
 }
 
 :focus-visible {
@@ -247,7 +299,7 @@ body {
    these classes give them token colors so light and dark both follow DESIGN.md section 2. ---------- */
 .leaflet-container {
   background: var(--surface);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-text-face), system-ui, sans-serif;
 }
 
 /* Route drawn like the logo's road: orange lane over a thin white casing. */
