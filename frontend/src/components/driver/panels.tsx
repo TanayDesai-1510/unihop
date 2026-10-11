@@ -1,8 +1,9 @@
 "use client";
 
-import { ChevronRight, MapPin, Star } from "lucide-react";
+import { ChevronRight, MapPin, Star, WifiOff } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
+import { useConnectionProblem } from "@/components/app/ConnectionBanner";
 import { CountdownRing } from "@/components/brand/CountdownRing";
 import { Price } from "@/components/brand/Price";
 import { HeroSurface } from "@/components/brand/Road";
@@ -21,11 +22,21 @@ const miles = (m: number) => `${(m / 1609.34).toFixed(1)} mi`;
 export function DriverHomePanel({ flow, firstName }: { flow: DriverFlowState; firstName?: string }) {
   const { profile, earnings, toggling } = flow;
   const online = !!profile?.isOnline;
+  const { problem, offline } = useConnectionProblem();
+  const cutOff = online && problem;
   return (
     <div className="flex flex-col gap-4 pb-2">
       <div>
         <p className="eyebrow text-ink-muted">Driver mode</p>
-        <h1 className="mt-1 text-title text-ink">{online ? "Finding you a trip" : `Ready to drive${firstName ? `, ${firstName}` : ""}?`}</h1>
+        <h1 className="mt-1 text-title text-ink">
+          {cutOff ? "Reconnecting…" : online ? "Finding you a trip" : `Ready to drive${firstName ? `, ${firstName}` : ""}?`}
+        </h1>
+        {cutOff && (
+          <p role="status" className="mt-1 flex items-start gap-1.5 text-label font-normal text-ink">
+            <WifiOff aria-hidden size={16} strokeWidth={2} className="mt-0.5 shrink-0 text-danger" />
+            {offline ? "You're offline." : "Can't reach UniHop."} {"You won't get trip requests until you're connected again."}
+          </p>
+        )}
       </div>
       <OnlineToggle online={online} pending={toggling} onToggle={flow.toggleOnline} />
       <motion.div {...pressable}>

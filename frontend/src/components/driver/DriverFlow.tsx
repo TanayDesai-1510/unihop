@@ -56,6 +56,7 @@ export function DriverFlow({ initialRideId }: { initialRideId?: string }) {
   useHideNav(inRide);
 
   const ride = flow.ride;
+  const navCard = !!ride && ["pickup", "arrived", "trip"].includes(flow.phase);
   const pickupId = flow.offer?.pickupHub.id ?? ride?.pickupHub.id ?? null;
   const dropoffId = flow.offer?.dropoffHub.id ?? ride?.dropoffHub.id ?? null;
   const self = flow.position;
@@ -94,7 +95,8 @@ export function DriverFlow({ initialRideId }: { initialRideId?: string }) {
     <div
       className="ride-map absolute inset-0 overflow-hidden bg-surface"
       // The nav card is taller than the logo chip: keep the map attribution clear of it.
-      style={{ ["--map-top-chrome" as string]: ride && ["pickup", "arrived", "trip"].includes(flow.phase) ? "102px" : "66px" }}
+      data-top-chrome={navCard ? "tall" : undefined}
+      style={{ ["--map-top-chrome" as string]: navCard ? "102px" : "66px" }}
     >
       <RideMap
         hubs={flow.hubs}
@@ -107,7 +109,7 @@ export function DriverFlow({ initialRideId }: { initialRideId?: string }) {
       />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[600] flex items-center justify-between gap-3 px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
-        {ride && ["pickup", "arrived", "trip"].includes(flow.phase) ? (
+        {ride && navCard ? (
           <div className="pointer-events-auto w-full">
             <NavCard ride={ride} demoGps={flow.demoGps} />
           </div>
