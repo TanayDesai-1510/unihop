@@ -60,6 +60,20 @@ public class RideRepository {
                 driverId, pin, id);
     }
 
+    /**
+     * Driver-driven progress: ARRIVED, IN_PROGRESS or COMPLETED, stamping the matching timestamp.
+     * Caller holds the row lock and has checked the transition.
+     */
+    public void markProgress(UUID id, RideStatus status) {
+        String column = switch (status) {
+            case ARRIVED -> "arrived_at";
+            case IN_PROGRESS -> "started_at";
+            case COMPLETED -> "completed_at";
+            default -> throw new IllegalArgumentException("Not a progress status: " + status);
+        };
+        jdbc.update("UPDATE rides SET status = ?, " + column + " = now() WHERE id = ?", status.name(), id);
+    }
+
     /** The user's non-terminal ride as rider or driver, newest first. */
     public Optional<RideRow> findActiveFor(UUID userId) {
         return jdbc.query("SELECT * FROM rides WHERE (rider_id = ? OR driver_id = ?) AND status IN " + ACTIVE_STATUSES
