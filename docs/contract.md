@@ -122,6 +122,24 @@ A mock gateway that behaves like a real processor. Riders save multiple payment 
 - `PaymentGateway` interface (`authorize`, `capture`, `voidAuthorization`, `payout`) with `MockPaymentGateway` as the only implementation. A `StripePaymentGateway` could replace it later.
 - PCI-style rule: raw card numbers and CVCs are sent only from the frontend to `/mockpay/v1/tokens`, never to `/api/**`, never logged, never stored. The vault stores token, brand, last4, expiry, wallet type, and test behavior only.
 
+### PaymentGateway signatures
+
+`com.unihop.payments.PaymentGateway` is owned by Hriday and implemented by `MockPaymentGateway`:
+
+```java
+String authorize(String token, BigDecimal amount, String idempotencyKey);
+void capture(String chargeId);
+void voidAuthorization(String chargeId);
+String payout(String token, BigDecimal amount, String idempotencyKey);
+```
+
+`token` is a vault token, never a raw card number. `authorize` returns the gateway charge ID;
+`capture` and `voidAuthorization` act on that ID. `payout` returns the gateway payout ID.
+The caller supplies the idempotency key for authorization and payout; repeating the same
+operation with that key returns the original ID without creating another charge or payout.
+Capture and void are idempotent by charge ID. Authorization declines throw the existing
+`PaymentDeclinedException` carrying the test card's `DeclineCode`.
+
 ### Ride payment lifecycle (same as Uber)
 1. **Request**: `authorizeRide` holds the fare. If `useCredits` is true, UniHop Cash covers as much of the fare as possible first (a `RIDE_SPEND` credit transaction for `-creditsApplied` is written immediately, so the balance shows the hold), and only the remainder (`cardAmount`) is authorized on the card. If credits cover everything, no card is needed and `paymentMethodId` is null. A decline means the ride is not created and the API returns 402 `PAYMENT_DECLINED` with `declineCode`.
 2. **Completed**: `captureRide` captures the card hold (status CAPTURED) and writes the driver's `RIDE_EARNING` for `driverPayout`. Credits were already debited in step 1, so no new credit entry.
