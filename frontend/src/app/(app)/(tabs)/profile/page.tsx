@@ -1,5 +1,5 @@
-import { RouteStub } from "@/components/RouteStub";
+import { ProfileScreen } from "@/components/profile/ProfileScreen";
 
 export default function ProfilePage() {
-  return <RouteStub title="Profile" issue={45} scene="pin" headline="Your profile" />;
+  return <ProfileScreen />;
 }
