@@ -508,3 +508,18 @@ body {
 .ride-map .leaflet-top {
   top: calc(env(safe-area-inset-top) + 66px);
 }
+
+
+/* Lite glass on low-end devices (set before first paint in Splash's boot script): same look at
+   rest, minus the per-frame backdrop blur that costs frames during sheet and camera motion. */
+:root[data-lite-glass] .glass-sheet {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--surface-raised) 98%, transparent) !important;
+}
+:root[data-lite-glass] .glass-bar,
+:root[data-lite-glass] .glass-chip {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--surface-raised);
+}

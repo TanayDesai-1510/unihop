@@ -4,7 +4,7 @@ import { ParamRouteStub } from "@/components/ParamRouteStub";
 export default function DriverRidePage() {
   return (
     <Suspense fallback={null}>
-      <ParamRouteStub title="Driver ride" issue={38} />
+      <ParamRouteStub title="Driver ride" issue={38} back={{ href: "/driver", label: "Back to driver home" }} />
     </Suspense>
   );
 }

@@ -7,7 +7,7 @@
 //
 // Route spec: <path>[@<seed user>][:tall|:splash]
 //   @rider1 (default) | @rider2 | @driver1..@driver5 | @anon (signed out)
-//   :tall    captures a 375x6400 viewport, for long scroll pages like /dev/components
+//   :tall    captures a 375x11000 viewport, for long scroll pages like /dev/components
 //   :splash  keeps the first-load splash and captures it mid-animation (otherwise it's skipped)
 // Env: BASE_URL (default http://localhost:3000)
 import { chromium, type Browser } from "playwright";
@@ -18,7 +18,7 @@ const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
 const OUT_DIR = resolve(__dirname, "..", "screenshots");
 const WIDTH = 375;
 const HEIGHT = 812;
-const TALL_HEIGHT = 6400;
+const TALL_HEIGHT = 11000;
 const SETTLE_MS = 1200; // mock latency is 250-800ms
 
 const USERS: Record<string, string | null> = {
@@ -43,7 +43,7 @@ const DEFAULT_ROUTES = [
   "/payment",
   "/earnings@driver1",
   "/profile",
-  "/rider/ride/demo",
+  "/receipt/demo",
 ];
 
 interface Shot {

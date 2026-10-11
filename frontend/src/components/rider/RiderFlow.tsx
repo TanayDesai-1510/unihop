@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ModeToggle } from "@/components/app/ModeToggle";
 import { useHideNav } from "@/components/app/TabsChrome";
 import { GlassSheet } from "@/components/brand/GlassSheet";
@@ -15,7 +15,7 @@ import { useRideFlow, type RiderPhase } from "./useRideFlow";
 
 /** Detents per phase: content-sized peeks plus a full detent where there's more to see. */
 const DETENTS: Record<RiderPhase, SnapPoint[]> = {
-  home: [300, "92%"],
+  home: [288, "92%"],
   options: [456, "92%"],
   confirm: [292],
   matching: [348],
@@ -43,13 +43,21 @@ const MAP_PHASE: Record<RiderPhase, MapPhase> = {
 export function RiderFlow({ initialRideId }: { initialRideId?: string }) {
   const flow = useRideFlow({ initialRideId });
   const reduce = useReducedMotion();
-  const [sheetH, setSheetH] = useState(300);
+  const [sheetH, setSheetH] = useState(288);
   const [homeSnap, setHomeSnap] = useState(0);
   const inRide = !["home", "options", "confirm"].includes(flow.phase);
   useHideNav(inRide);
 
-  const onPickupSnap = useCallback((id: string) => flow.choosePickup(id), [flow]);
-  const onHubTap = useCallback((id: string) => flow.phase === "home" && flow.chooseDropoff(id), [flow]);
+  // Stable callbacks for the map: `flow` changes on every live tick, and a new callback identity
+  // would make the map rebuild its markers each time.
+  const flowRef = useRef(flow);
+  useEffect(() => {
+    flowRef.current = flow;
+  }, [flow]);
+  const onPickupSnap = useCallback((id: string) => flowRef.current.choosePickup(id), []);
+  const onHubTap = useCallback((id: string) => {
+    if (flowRef.current.phase === "home") flowRef.current.chooseDropoff(id);
+  }, []);
 
   const panel = (() => {
     switch (flow.phase) {
@@ -125,7 +133,8 @@ export function RiderFlow({ initialRideId }: { initialRideId?: string }) {
           </div>
         ) : (
           <LayoutGroup>
-            <motion.div layout transition={springSmooth} className="relative">
+            {/* layoutDependency: measure only when the ride state changes, not on every live tick. */}
+            <motion.div layout layoutDependency={flow.phase} transition={springSmooth} className="relative">
               <AnimatePresence mode="popLayout" initial={false}>
                 <motion.div
                   key={flow.phase}

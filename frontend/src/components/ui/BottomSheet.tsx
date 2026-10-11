@@ -49,6 +49,13 @@ export function BottomSheet({
   ...aria
 }: BottomSheetProps) {
   const frameRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLElement>(null);
+  /** Marks the sheet as moving (drag or settle) so expensive materials (backdrop blur) can pause. */
+  const setMoving = useCallback((moving: boolean) => {
+    if (!sheetRef.current) return;
+    if (moving) sheetRef.current.dataset.moving = "";
+    else delete sheetRef.current.dataset.moving;
+  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
   const controls = useDragControls();
   const reduce = useReducedMotion();
@@ -127,17 +134,21 @@ export function BottomSheet({
     prevMaxH.current = maxH;
     if (!keyChanged) return;
     const next = Math.max(0, Math.min(snapPoints.length - 1, index));
-    animate(y, maxH - heights[next], reduce ? { ...fadeUI, duration: 0.15 } : springSheet);
+    setMoving(true);
+    animate(y, maxH - heights[next], reduce ? { ...fadeUI, duration: 0.15 } : springSheet).then(() => setMoving(false));
     report(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snapKey, maxH, containerH]);
 
   const settle = useCallback(
     (target: number, velocity = 0, onDone?: () => void) => {
-      animate(y, target, reduce ? { ...fadeUI, duration: 0.15 } : { ...springSheet, velocity, onComplete: onDone });
-      if (reduce) onDone?.();
+      setMoving(true);
+      animate(y, target, reduce ? { ...fadeUI, duration: 0.15 } : { ...springSheet, velocity }).then(() => {
+        setMoving(false);
+        onDone?.();
+      });
     },
-    [y, reduce],
+    [y, reduce, setMoving],
   );
 
   const goTo = useCallback(
@@ -213,6 +224,7 @@ export function BottomSheet({
         />
       )}
       <motion.section
+        ref={sheetRef}
         role="region"
         aria-label={aria["aria-label"]}
         drag="y"
@@ -221,6 +233,7 @@ export function BottomSheet({
         dragMomentum={false}
         dragConstraints={{ top: 0, bottom: dismissible ? maxH : lowestY }}
         dragElastic={{ top: TOP_RUBBER_BAND, bottom: dismissible ? 0 : TOP_RUBBER_BAND }}
+        onDragStart={() => setMoving(true)}
         onDragEnd={onDragEnd}
         onKeyDown={(e) => {
           if (e.key === "Escape" && atTop && topIndex > 0) goTo(topIndex - 1);
@@ -254,6 +267,15 @@ export function BottomSheet({
         >
           {children}
         </div>
+        {/* Below full, content dissolves at the bottom edge instead of being sliced. An overlay that
+            fades (opacity only), not a mask, so reaching full never forces a re-raster. */}
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface-raised to-transparent transition-opacity duration-200",
+            atTop ? "opacity-0" : "opacity-100",
+          )}
+        />
       </motion.section>
     </div>
   );

@@ -149,7 +149,7 @@ export function OptionsPanel({ flow }: { flow: RideFlow }) {
         <PanelTitle>Choose a ride</PanelTitle>
       </div>
       <RouteSummary pickup={pickup} dropoff={dropoff} compact />
-      <OptionRow fare={quote} pickupMin={PICKUP_ESTIMATE_MIN} dropoffAt={dropoffAt} />
+      <OptionRow fare={quote} pickupMin={PICKUP_ESTIMATE_MIN} dropoffAt={dropoffAt} layoutDependency={flow.phase} />
       <div className="flex flex-col divide-y divide-line">
         {method ? (
           <PaymentLine label={method.label} brand={method.brand} type={method.type} onChange={methods && methods.length > 1 ? nextMethod : undefined} />
@@ -189,10 +189,10 @@ export function ConfirmPanel({ flow }: { flow: RideFlow }) {
   if (!pickup || !dropoff) return null;
   return (
     <div className="flex flex-col gap-4 pb-2">
-      <motion.div layoutId="ride-option" transition={springSmooth} className="rounded-card bg-surface-raised">
+      <motion.div layoutId="ride-option" layoutDependency={flow.phase} transition={springSmooth} className="rounded-card bg-surface-raised">
         <div className="flex items-start gap-1">
           <BackButton onClick={flow.toOptions} />
-          <motion.div layout="position" className="min-w-0 flex-1 pt-1.5">
+          <motion.div layout="position" layoutDependency={flow.phase} className="min-w-0 flex-1 pt-1.5">
             <p className="eyebrow text-ink-muted">Confirm your pickup</p>
             <AnimatePresence mode="wait" initial={false}>
               <motion.h2 key={pickup.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={springSmooth} className="truncate text-title text-ink">
@@ -200,7 +200,7 @@ export function ConfirmPanel({ flow }: { flow: RideFlow }) {
               </motion.h2>
             </AnimatePresence>
           </motion.div>
-          <motion.span layout="position" className="pt-1 text-ink">
+          <motion.span layout="position" layoutDependency={flow.phase} className="pt-1 text-ink">
             {quote ? <Price amount={quote.total} size="title" /> : null}
           </motion.span>
         </div>
@@ -293,7 +293,7 @@ export function MatchingPanel({ flow }: { flow: RideFlow }) {
         </div>
         <HopDots className="mt-6" label="Matching" />
       </div>
-      <CompactTicket pickup={pickup} dropoff={dropoff} total={ride.fare.total} payment={ride.payment} />
+      <CompactTicket pickup={pickup} dropoff={dropoff} total={ride.fare.total} payment={ride.payment} layoutDependency={ride.status} />
       <Button variant="ghost" onClick={flow.cancel}>
         Cancel request
       </Button>
@@ -337,7 +337,7 @@ export function EnRoutePanel({ flow }: { flow: RideFlow }) {
           )}
         </h2>
       </div>
-      <DriverRow driver={ride.driver} layoutId="driver-card" />
+      <DriverRow driver={ride.driver} layoutId="driver-card" layoutDependency={ride.status} />
       {ride.pin && (
         <div className="flex flex-col gap-2.5 rounded-card bg-surface p-3">
           <p className="px-1 text-label text-ink">
@@ -353,7 +353,7 @@ export function EnRoutePanel({ flow }: { flow: RideFlow }) {
         <RoundAction icon={<Share2 aria-hidden size={22} strokeWidth={2} />} label="Share" onClick={share} />
         <RoundAction icon={<ShieldCheck aria-hidden size={22} strokeWidth={2} />} label="Safety" tone="safety" onClick={() => window.open("tel:7329327211")} />
       </div>
-      <CompactTicket pickup={pickup} dropoff={dropoff} total={ride.fare.total} payment={ride.payment} />
+      <CompactTicket pickup={pickup} dropoff={dropoff} total={ride.fare.total} payment={ride.payment} layoutDependency={ride.status} />
       <Button variant="ghost" onClick={flow.cancel}>
         Cancel ride
       </Button>
@@ -381,8 +381,8 @@ export function TripPanel({ flow }: { flow: RideFlow }) {
         </h2>
       </div>
       <RoadTimeline steps={ROAD_STEPS} current={2} progress={progress} />
-      <DriverRow driver={ride.driver} layoutId="driver-card" />
-      <CompactTicket pickup={pickup} dropoff={dropoff} total={ride.fare.total} payment={ride.payment} />
+      <DriverRow driver={ride.driver} layoutId="driver-card" layoutDependency={ride.status} />
+      <CompactTicket pickup={pickup} dropoff={dropoff} total={ride.fare.total} payment={ride.payment} layoutDependency={ride.status} />
     </div>
   );
 }
@@ -422,7 +422,7 @@ export function DonePanel({ flow }: { flow: RideFlow }) {
         <Price amount={ride.payment.amountTotal || f.total} size="hero" countUp className="text-on-brand" />
       </HeroSurface>
 
-      <motion.div layoutId="fare-ticket" transition={springSmooth}>
+      <motion.div layoutId="fare-ticket" layoutDependency={ride.status} transition={springSmooth}>
         <TicketCard
           top={<RouteSummary pickup={pickup} dropoff={dropoff} />}
           bottom={

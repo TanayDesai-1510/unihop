@@ -9,7 +9,8 @@
     "lint": "eslint",
     "screenshot": "tsx scripts/screenshot.ts",
     "brand-assets": "tsx scripts/brand-assets.ts",
-    "ride-flow": "tsx scripts/ride-flow.ts"
+    "ride-flow": "tsx scripts/ride-flow.ts",
+    "perf": "tsx scripts/perf-trace.ts"
   },
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",

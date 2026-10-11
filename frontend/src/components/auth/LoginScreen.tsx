@@ -136,7 +136,7 @@ export function LoginScreen() {
               <Button type="submit" variant="primary" loading={busy}>
                 Send code
               </Button>
-              <p className="text-center text-caption font-medium text-ink-muted">Rutgers students only. By continuing you agree to ride respectfully.</p>
+              <p className="text-center text-caption font-medium text-ink-muted">Rutgers students only.</p>
             </motion.form>
           ) : (
             <motion.div

@@ -86,22 +86,23 @@ export function RouteSummary({ pickup, dropoff, compact = false, pickupNote, dro
 }
 
 /** Uber-style option row. Selected: thick navy outline. Morphs (layoutId) into the confirm card. */
-export function OptionRow({ fare, pickupMin, dropoffAt, selected = true, onClick }: { fare: FareBreakdown | null; pickupMin: number; dropoffAt: string; selected?: boolean; onClick?: () => void }) {
+export function OptionRow({ fare, pickupMin, dropoffAt, selected = true, onClick, layoutDependency }: { fare: FareBreakdown | null; pickupMin: number; dropoffAt: string; selected?: boolean; onClick?: () => void; layoutDependency?: unknown }) {
   return (
     <motion.button
       type="button"
       layoutId="ride-option"
+      layoutDependency={layoutDependency}
       transition={springSmooth}
       onClick={onClick}
       whileTap={{ scale: PRESS_SCALE }}
       aria-pressed={selected}
       className={cn("flex w-full items-center gap-4 rounded-card bg-surface-raised p-4 text-left", selected ? "ring-[2.5px] ring-brand ring-inset" : "ring-1 ring-line ring-inset")}
     >
-      <motion.span layout="position" className="flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft">
+      <motion.span layout="position" layoutDependency={layoutDependency} className="flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/icon-192.png" alt="" className="size-9 rounded-[9px]" />
       </motion.span>
-      <motion.span layout="position" className="min-w-0 flex-1">
+      <motion.span layout="position" layoutDependency={layoutDependency} className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <span className="text-headline text-ink">UniHop</span>
           <span className="inline-flex items-center gap-0.5 text-label text-ink-muted">
@@ -112,7 +113,7 @@ export function OptionRow({ fare, pickupMin, dropoffAt, selected = true, onClick
           <span className="tnum">~{pickupMin} min away</span> · drop-off <span className="tnum">{dropoffAt}</span>
         </span>
       </motion.span>
-      <motion.span layout="position" className="text-ink">
+      <motion.span layout="position" layoutDependency={layoutDependency} className="text-ink">
         {fare ? <Price amount={fare.total} size="title" /> : <span className="inline-block h-7 w-16 animate-[skeleton-pulse_1.4s_ease-in-out_infinite] rounded-[6px] bg-line" />}
       </motion.span>
     </motion.button>
@@ -120,9 +121,9 @@ export function OptionRow({ fare, pickupMin, dropoffAt, selected = true, onClick
 }
 
 /** The fare ticket, compact form. Same layoutId as the receipt ticket so it carries through the ride. */
-export function CompactTicket({ pickup, dropoff, total, payment }: { pickup: Hub; dropoff: Hub; total: number; payment?: PaymentSummary | null }) {
+export function CompactTicket({ pickup, dropoff, total, payment, layoutDependency }: { pickup: Hub; dropoff: Hub; total: number; payment?: PaymentSummary | null; layoutDependency?: unknown }) {
   return (
-    <motion.div layoutId="fare-ticket" transition={springSmooth} className="ticket">
+    <motion.div layoutId="fare-ticket" layoutDependency={layoutDependency} transition={springSmooth} className="ticket">
       <div className="ticket-half ticket-top flex items-center justify-between gap-3 px-4 pb-3 pt-3">
         <p className="min-w-0 truncate text-label text-ink">
           {pickup.name} <span className="text-ink-muted">to</span> {dropoff.name}
@@ -151,9 +152,9 @@ export function PinBoxes({ pin }: { pin: string }) {
 }
 
 /** Driver identity row: avatar over tinted car, name + rating + car, plate. */
-export function DriverRow({ driver, layoutId }: { driver: DriverCard; layoutId?: string }) {
+export function DriverRow({ driver, layoutId, layoutDependency }: { driver: DriverCard; layoutId?: string; layoutDependency?: unknown }) {
   return (
-    <motion.div layoutId={layoutId} transition={springSmooth} className="flex items-center gap-3">
+    <motion.div layoutId={layoutId} layoutDependency={layoutDependency} transition={springSmooth} className="flex items-center gap-3">
       <CarAvatar name={driver.name} carColor={driver.carColor} />
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-headline text-ink">

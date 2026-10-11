@@ -199,11 +199,13 @@ export default function RideMap({ hubs, pickupId, dropoffId, phase, driver, bott
     if (!pts.length) return;
     const bounds = L.latLngBounds(pts);
     const opts: L.FitBoundsOptions = { paddingTopLeft: [40, TOP_INSET], paddingBottomRight: [40, insetRef.current + 24], maxZoom: 15.5 };
-    if (reduce) m.fitBounds(bounds, opts);
-    else m.flyToBounds(bounds, { ...opts, duration: 0.9, easeLinearity: 0.2 });
-    // re-fit on phase / selection / sheet changes, not on every driver fix
+    // Animated fitBounds uses Leaflet's CSS-transform zoom animation (compositor), unlike flyTo,
+    // which re-runs setView every frame and drops frames on slow phones.
+    m.fitBounds(bounds, { ...opts, animate: !reduce, duration: 0.6 });
+    // Re-fit on state changes only (phase, selection, first driver fix). Not on sheet detent moves:
+    // a camera flight during a sheet drag costs frames; the current inset is read from insetRef.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, pickup?.id, dropoff?.id, hubs.length, bottomInset, driverKnown]);
+  }, [phase, pickup?.id, dropoff?.id, hubs.length, driverKnown]);
 
   // ---- confirm pickup: drag the map under a fixed pin, snap to the nearest hub ----
   useEffect(() => {
@@ -271,8 +273,7 @@ export default function RideMap({ hubs, pickupId, dropoffId, phase, driver, bott
 function centerOnVisual(m: L.Map, at: LatLng, zoom: number, inset: number, animate: boolean) {
   const p = m.project(at, zoom).add([0, inset / 2]);
   const center = m.unproject(p, zoom);
-  if (animate) m.flyTo(center, zoom, { duration: 0.8, easeLinearity: 0.2 });
-  else m.setView(center, zoom);
+  m.setView(center, zoom, { animate, duration: 0.6 });
 }
 
 /** Draws a polyline in from start to end (stroke-dash reveal), then clears the dash. */

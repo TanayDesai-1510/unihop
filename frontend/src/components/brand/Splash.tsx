@@ -11,7 +11,11 @@ export const SPLASH_KEY = "unihop.splash.v1";
  * Runs in <head> before first paint: marks the document when this session already saw the splash,
  * so CSS hides it instantly and repeat visits never flash navy.
  */
-export const splashBootScript = `try{if(sessionStorage.getItem("${SPLASH_KEY}"))document.documentElement.dataset.splash="done"}catch(e){document.documentElement.dataset.splash="done"}`;
+export const splashBootScript =
+  `try{if(sessionStorage.getItem("${SPLASH_KEY}"))document.documentElement.dataset.splash="done"}catch(e){document.documentElement.dataset.splash="done"}` +
+  // Low-end devices get "lite glass" (solid fill, no backdrop blur): measured as the main cost of
+  // sheet and camera transitions when rasterized without a fast GPU (see scripts/perf-trace.ts).
+  `;try{var n=navigator;if((n.hardwareConcurrency||8)<=4||(n.deviceMemory||8)<=3)document.documentElement.dataset.liteGlass=""}catch(e){}`;
 
 const HOLD_MS = 620; // scale-in settles, then fade (fade 0.38s): ~1.0s total, under DESIGN.md's 1.2s
 
