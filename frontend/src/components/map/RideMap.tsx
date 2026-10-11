@@ -25,7 +25,7 @@ export interface RideMapProps {
   onHubTap?: (hubId: string) => void;
 }
 
-const TOP_INSET = 116; // floating top bar + attribution + selected-pin height
+const TOP_INSET = 148; // floating top bar + attribution + the selected pin graphic (51px above its point)
 const CAR_GLIDE_MS = 1300;
 
 const ll = (h: Hub): LatLng => [h.lat, h.lng];

@@ -25,6 +25,17 @@ const DETENTS: Record<RiderPhase, SnapPoint[]> = {
   ended: [330],
 };
 
+/**
+ * Camera inset for a phase: the sheet's resting detent, known up front. (The sheet reports its
+ * height a render later, which is too late for the camera fit that runs on the phase change.)
+ */
+function phaseInset(phase: RiderPhase): number {
+  const first = DETENTS[phase][0];
+  if (typeof first === "number") return first;
+  const vh = typeof window === "undefined" ? 812 : window.innerHeight;
+  return (parseFloat(first) / 100) * vh;
+}
+
 const MAP_PHASE: Record<RiderPhase, MapPhase> = {
   home: "browse",
   options: "options",
@@ -43,7 +54,6 @@ const MAP_PHASE: Record<RiderPhase, MapPhase> = {
 export function RiderFlow({ initialRideId }: { initialRideId?: string }) {
   const flow = useRideFlow({ initialRideId });
   const reduce = useReducedMotion();
-  const [sheetH, setSheetH] = useState(288);
   const [homeSnap, setHomeSnap] = useState(0);
   const inRide = !["home", "options", "confirm"].includes(flow.phase);
   useHideNav(inRide);
@@ -88,7 +98,7 @@ export function RiderFlow({ initialRideId }: { initialRideId?: string }) {
         dropoffId={flow.phase === "home" ? null : flow.dropoff?.id}
         phase={MAP_PHASE[flow.phase]}
         driver={flow.driverPos}
-        bottomInset={sheetH}
+        bottomInset={phaseInset(flow.phase)}
         onPickupSnap={onPickupSnap}
         onHubTap={onHubTap}
       />
@@ -119,7 +129,6 @@ export function RiderFlow({ initialRideId }: { initialRideId?: string }) {
         snapPoints={DETENTS[flow.phase]}
         snap={flow.phase === "home" ? homeSnap : undefined}
         onSnapChange={flow.phase === "home" ? setHomeSnap : undefined}
-        onHeightChange={setSheetH}
         className="z-[700]"
       >
         {flow.resuming && !flow.hubs ? (
