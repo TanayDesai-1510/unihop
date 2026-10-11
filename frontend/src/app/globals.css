@@ -525,6 +525,20 @@ body {
   top: calc(env(safe-area-inset-top) + var(--map-top-chrome, 66px));
 }
 
+/* Keep Leaflet's internal z-indices (panes 400, controls 1000) inside the map, so app chrome
+   outside it (the reconnecting banner, the bottom nav) stacks normally. */
+.ride-map {
+  isolation: isolate;
+}
+
+/* Reconnecting banner on map screens: below the floating top bar (or the driver's nav card). */
+body:has(.ride-map) .connection-banner {
+  padding-top: calc(env(safe-area-inset-top) + 66px);
+}
+body:has(.ride-map[data-top-chrome="tall"]) .connection-banner {
+  padding-top: calc(env(safe-area-inset-top) + 102px);
+}
+
 
 /* Lite glass on low-end devices (set before first paint in Splash's boot script): same look at
    rest, minus the per-frame backdrop blur that costs frames during sheet and camera motion. */
