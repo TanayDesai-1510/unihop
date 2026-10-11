@@ -102,7 +102,7 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
   // ---- offers over WebSocket ----
   useEffect(() => {
     if (!userId) return;
-    return realtime.subscribeDriverOffers(userId, (e) => {
+    const offOffers = realtime.subscribeDriverOffers(userId, (e) => {
       if (isOfferRevoked(e)) {
         setOffer((o) => {
           if (o && o.offerId === e.offerId) toast.show({ tone: "info", message: "The rider cancelled that request." });
@@ -113,13 +113,33 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
       haptic("offer");
       setOffer(e);
     });
+    // An offer sent (or revoked) while the socket was down is never redelivered: re-read it on reconnect.
+    let catchUp: ReturnType<typeof setTimeout> | undefined;
+    let wasDown = false;
+    const offConn = realtime.onConnectionChange((state) => {
+      if (state === "disconnected") wasDown = true;
+      if (state !== "connected" || !wasDown) return;
+      wasDown = false;
+      clearTimeout(catchUp);
+      catchUp = setTimeout(() => {
+        api
+          .getCurrentOffer()
+          .then((o) => setOffer(o))
+          .catch(() => {});
+      }, 0);
+    });
+    return () => {
+      clearTimeout(catchUp);
+      offOffers();
+      offConn();
+    };
   }, [userId, toast]);
 
   // ---- live ride status (rider may cancel) ----
   const rideId = ride?.id;
   useEffect(() => {
     if (!rideId) return;
-    return realtime.subscribeRideStatus(rideId, (e) => {
+    const offStatus = realtime.subscribeRideStatus(rideId, (e) => {
       if (e.status !== lastStatus.current) {
         if (e.status === "CANCELLED" && lastStatus.current !== "CANCELLED") {
           haptic("error");
@@ -130,6 +150,30 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
       setRide((r) => (r ? { ...r, status: e.status } : r));
       api.getRide(rideId).then(setRide).catch(() => {});
     });
+    // Catch up on anything missed before subscribing or while disconnected (e.g. the rider cancelled).
+    let catchUp: ReturnType<typeof setTimeout> | undefined;
+    const offConn = realtime.onConnectionChange((state) => {
+      if (state !== "connected") return;
+      clearTimeout(catchUp);
+      catchUp = setTimeout(() => {
+        api
+          .getRide(rideId)
+          .then((r) => {
+            if (r.status === "CANCELLED" && lastStatus.current !== "CANCELLED") {
+              haptic("error");
+              toast.show({ tone: "info", message: "The rider cancelled this trip. You weren't affected." });
+            }
+            lastStatus.current = r.status;
+            setRide(r);
+          })
+          .catch(() => {});
+      }, 0);
+    });
+    return () => {
+      clearTimeout(catchUp);
+      offStatus();
+      offConn();
+    };
   }, [rideId, toast]);
 
   // ---- location heartbeat while online (matching uses it) ----
