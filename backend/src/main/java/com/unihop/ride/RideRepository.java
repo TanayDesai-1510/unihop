@@ -41,6 +41,10 @@ public class RideRepository {
         return jdbc.query("SELECT * FROM rides WHERE id = ?", MAPPER, id).stream().findFirst();
     }
 
+    public Optional<RideRow> findByShareToken(String shareToken) {
+        return jdbc.query("SELECT * FROM rides WHERE share_token = ?", MAPPER, shareToken).stream().findFirst();
+    }
+
     /** Row-locks the ride for the rest of the transaction. */
     public Optional<RideRow> findForUpdate(UUID id) {
         return jdbc.query("SELECT * FROM rides WHERE id = ? FOR UPDATE", MAPPER, id).stream().findFirst();

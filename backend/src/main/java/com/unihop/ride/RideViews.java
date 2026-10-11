@@ -1,6 +1,8 @@
 package com.unihop.ride;
 
+import com.unihop.common.enums.RideStatus;
 import com.unihop.common.enums.Zone;
+import com.unihop.realtime.Navigation;
 import com.unihop.payments.PaymentSummary;
 import com.unihop.ride.dto.DriverCard;
 import com.unihop.ride.dto.Hub;
@@ -45,6 +47,23 @@ public class RideViews {
                 ride.cancelledAt(),
                 ride.cancelReason(),
                 ride.cancelledBy());
+    }
+
+    /** Where the driver is heading: pickup while ACCEPTED, dropoff while IN_PROGRESS, else null. */
+    public Hub currentTarget(RideRow ride) {
+        if (ride.status() == RideStatus.ACCEPTED) {
+            return hub(ride.pickupHubId());
+        }
+        if (ride.status() == RideStatus.IN_PROGRESS) {
+            return hub(ride.dropoffHubId());
+        }
+        return null;
+    }
+
+    /** Contract section 11 {@code etaSeconds}: to pickup while ACCEPTED, to dropoff while IN_PROGRESS, else null. */
+    public Integer etaSeconds(RideRow ride, double lat, double lng) {
+        Hub target = currentTarget(ride);
+        return target == null ? null : Navigation.etaSeconds(lat, lng, target.lat(), target.lng());
     }
 
     public Hub hub(UUID hubId) {
