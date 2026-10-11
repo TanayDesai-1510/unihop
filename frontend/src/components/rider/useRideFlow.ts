@@ -198,11 +198,16 @@ export function useRideFlow({ initialRideId }: { initialRideId?: string } = {}) 
 
   const choosePickup = useCallback(
     (id: string) => {
-      if (id === dropoffId) return;
+      if (id === dropoffId) {
+        toast.show({ tone: "info", message: "That's your destination. Pick a different stop." });
+        return;
+      }
+      haptic("tick");
       setPickupId(id);
+      setQuote(null);
       setRequestError(null);
     },
-    [dropoffId],
+    [dropoffId, toast],
   );
 
   const request = useCallback(async () => {

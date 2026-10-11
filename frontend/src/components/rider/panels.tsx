@@ -11,7 +11,9 @@ import { HeroSurface, LaneDivider, TicketCard } from "@/components/brand/Road";
 import { RoadScene } from "@/components/brand/RoadScene";
 import { RoadTimeline } from "@/components/brand/RoadTimeline";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { ListRow } from "@/components/ui/ListRow";
+import { Sheet } from "@/components/ui/Sheet";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/States";
 import { Switch } from "@/components/ui/Switch";
@@ -50,10 +52,95 @@ function BackButton({ onClick, label = "Back" }: { onClick: () => void; label?: 
   );
 }
 
+function PickupPicker({ flow, open, onClose }: { flow: RideFlow; open: boolean; onClose: () => void }) {
+  const [query, setQuery] = useState("");
+
+  const text = query.trim().toLowerCase();
+  const hubs = flow.hubs ?? [];
+  const shortcuts = SHORTCUTS.map((code) => hubs.find((hub) => hub.code === code)).filter((hub): hub is NonNullable<typeof hub> => !!hub);
+  const matches = text
+    ? hubs.filter((hub) => `${hub.name} ${hub.code} ${hub.zone}`.toLowerCase().includes(text))
+    : hubs;
+
+  const select = (id: string) => {
+    flow.choosePickup(id);
+    setQuery("");
+    onClose();
+  };
+  const close = () => {
+    setQuery("");
+    onClose();
+  };
+
+  return (
+    <Sheet open={open} onClose={close} title="Choose your pickup" description="Search campus stops or pick a designated location.">
+      <div className="flex flex-col gap-4">
+        <Input
+          label="Search pickup stops"
+          hideLabel
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search campus stops"
+          autoComplete="off"
+          leading={<Search aria-hidden size={19} strokeWidth={2.25} />}
+        />
+
+        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
+          {shortcuts.map((hub) => {
+            const selected = hub.id === flow.pickup?.id;
+            const destination = hub.id === flow.dropoff?.id;
+            return (
+              <motion.button
+                key={hub.id}
+                type="button"
+                {...pressable}
+                onClick={() => select(hub.id)}
+                disabled={selected || destination}
+                aria-pressed={selected}
+                className={cn(
+                  "flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-label font-semibold",
+                  selected ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink",
+                  destination && "opacity-40",
+                )}
+              >
+                <MapPin aria-hidden size={16} strokeWidth={2.25} />
+                {SHORT_NAME[hub.code] ?? hub.name}
+                {selected && <Check aria-hidden size={15} strokeWidth={2.5} />}
+              </motion.button>
+            );
+          })}
+        </div>
+
+        <LaneDivider label={text ? "Search results" : "All pickup stops"} />
+        <div className="-mx-3 flex flex-col">
+          {matches.map((hub) => {
+            const selected = hub.id === flow.pickup?.id;
+            const destination = hub.id === flow.dropoff?.id;
+            return (
+              <ListRow
+                key={hub.id}
+                leading={<MapPin aria-hidden size={20} strokeWidth={2} />}
+                title={hub.name}
+                subtitle={selected ? "Current pickup" : destination ? "Current destination" : hub.zone.replace("_", " ").toLowerCase().replace(/^\w/, (character) => character.toUpperCase())}
+                trailing={selected ? <Check aria-hidden size={18} strokeWidth={2.5} className="text-brand" /> : undefined}
+                selected={selected}
+                disabled={selected || destination}
+                onClick={() => select(hub.id)}
+              />
+            );
+          })}
+          {matches.length === 0 && <p className="px-3 py-8 text-center text-label font-normal text-ink-muted">No campus stops match “{query.trim()}”.</p>}
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
 // ---------------------------------------------------------------- home
 
 export function HomePanel({ flow, onExpand }: { flow: RideFlow; onExpand: () => void }) {
   const { hubs, hubsError, loadHubs, pickup } = flow;
+  const [pickingPickup, setPickingPickup] = useState(false);
   if (hubsError) return <ErrorState message="We couldn't load campus stops. Check your connection and try again." onRetry={loadHubs} />;
   const shortcuts = hubs ? SHORTCUTS.map((c) => hubs.find((h) => h.code === c)).filter((h): h is NonNullable<typeof h> => !!h) : null;
 
@@ -100,14 +187,21 @@ export function HomePanel({ flow, onExpand }: { flow: RideFlow; onExpand: () => 
           : [0, 1, 2, 3].map((i) => <Skeleton key={i} rounded="full" className="h-11 w-28 shrink-0" />)}
       </div>
 
-      <div className="flex items-center gap-3 rounded-card bg-brand-soft px-4 py-3">
+      <motion.button
+        type="button"
+        onClick={() => setPickingPickup(true)}
+        {...pressable}
+        className="flex w-full items-center gap-3 rounded-card bg-brand-soft px-4 py-3 text-left"
+        aria-label={`Change pickup. Current pickup is ${pickup?.name ?? "loading"}`}
+      >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-on-brand">
           <MapPin aria-hidden size={18} strokeWidth={2.25} />
         </span>
         <p className="min-w-0 flex-1 truncate text-label font-normal text-ink">
           Pickup at <span className="font-semibold">{pickup?.name ?? "…"}</span>
         </p>
-      </div>
+        <span className="text-label font-semibold text-brand">Change</span>
+      </motion.button>
 
       <LaneDivider label="All stops" className="mt-2" />
       <div className="-mx-3 flex flex-col">
@@ -125,6 +219,7 @@ export function HomePanel({ flow, onExpand }: { flow: RideFlow; onExpand: () => 
             ))
           : null}
       </div>
+      <PickupPicker flow={flow} open={pickingPickup} onClose={() => setPickingPickup(false)} />
     </div>
   );
 }
@@ -184,6 +279,7 @@ export function OptionsPanel({ flow }: { flow: RideFlow }) {
 
 export function ConfirmPanel({ flow }: { flow: RideFlow }) {
   const { pickup, dropoff, quote, requesting, requestError } = flow;
+  const [pickingPickup, setPickingPickup] = useState(false);
   if (!pickup || !dropoff) return null;
   return (
     <div className="flex flex-col gap-4 pb-2">
@@ -203,6 +299,9 @@ export function ConfirmPanel({ flow }: { flow: RideFlow }) {
           </motion.span>
         </div>
         <p className="mt-2 text-label font-normal text-ink-muted">Drag the map to move the pin. We pick up at campus hubs, so it snaps to the nearest one.</p>
+        <button type="button" onClick={() => setPickingPickup(true)} className="mt-3 text-label font-semibold text-brand">
+          Search or choose a pickup stop
+        </button>
       </motion.div>
 
       <AnimatePresence initial={false}>
@@ -236,6 +335,7 @@ export function ConfirmPanel({ flow }: { flow: RideFlow }) {
           Request UniHop
         </Button>
       </HopIn>
+      <PickupPicker flow={flow} open={pickingPickup} onClose={() => setPickingPickup(false)} />
     </div>
   );
 }
