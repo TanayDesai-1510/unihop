@@ -252,9 +252,21 @@ ok "402 PAYMENT_DECLINED / CARD_DECLINED, no ride created"
 # ---------------------------------------------------------------------------------------------------------------------
 step "8. Request then cancel: payment VOIDED, credits restored"
 BALANCE_BEFORE="$(credits_balance)"
+if money_eq "$BALANCE_BEFORE" 0; then
+  # Step 4 spent the credits; top up so the cancel has credits to give back.
+  req POST /api/credits/topup "{\"amount\":10,\"paymentMethodId\":\"$MC_ID\"}" "$RIDER1_AUTH"
+  expect_status 200
+  BALANCE_BEFORE="$(json '.balance')"
+  ok "topped up UniHop Cash to $(money "$BALANCE_BEFORE") with the Mastercard"
+fi
 req POST /api/rides "{\"pickupHubId\":\"$YARD\",\"dropoffHubId\":\"$BUSCH_SC\",\"paymentMethodId\":\"$MC_ID\",\"useCredits\":true}" "$RIDER1_AUTH"
 expect_status 201
 CANCEL_RIDE="$(json '.id')"
+HELD="$(json '.payment.creditsApplied')"
+[[ "$(jq -n --argjson h "$HELD" '$h > 0')" == "true" ]] \
+  || fail "no credits were applied to the ride, so the refund cannot be checked"
+money_eq "$(credits_balance)" "$(jq -n --argjson b "$BALANCE_BEFORE" --argjson h "$HELD" '$b - $h')" \
+  || fail "credit balance did not drop by the $(money "$HELD") held for the ride"
 req POST "/api/rides/$CANCEL_RIDE/cancel" '{"reason":"smoke.sh cancel check"}' "$RIDER1_AUTH"
 expect_status 200
 [[ "$(json '.status')" == "CANCELLED" ]] || fail "ride is $(json '.status') after cancel"
@@ -263,7 +275,7 @@ expect_status 200
 BALANCE_AFTER="$(credits_balance)"
 money_eq "$BALANCE_AFTER" "$BALANCE_BEFORE" \
   || fail "credits $(money "$BALANCE_BEFORE") before, $(money "$BALANCE_AFTER") after cancel; expected them restored"
-ok "VOIDED, credits back to $(money "$BALANCE_AFTER")"
+ok "VOIDED, $(money "$HELD") credits refunded, balance back to $(money "$BALANCE_AFTER")"
 
 echo ""
 echo "PASS: golden path verified against $BASE_URL"
