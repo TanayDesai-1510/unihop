@@ -38,6 +38,7 @@
   --brand-logo: #002e73;
   --shadow-knob: 0 2px 6px rgba(14, 17, 22, 0.18);
   --route-casing: #ffffff;
+
   /* Card preview art per brand (physical card colors, not UI chrome), same in both modes. */
   --card-art-unknown: #2a3550;
   --card-art-visa: #0d2c6c;
