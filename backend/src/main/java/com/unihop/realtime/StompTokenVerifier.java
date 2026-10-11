@@ -4,8 +4,8 @@ import java.util.UUID;
 
 /**
  * Verifies the bearer token sent on STOMP CONNECT and returns its user id, or throws
- * {@link com.unihop.common.ApiException} (UNAUTHORIZED). JWT parsing belongs to the auth package, so the
- * real implementation delegates to it; until that is merged, {@link WebSocketConfig} registers one that rejects every token.
+ * {@link com.unihop.common.ApiException} (UNAUTHORIZED). {@link WebSocketConfig} wires it to the auth package's
+ * {@link com.unihop.auth.JwtSubjectReader}; tests can pass their own.
  */
 public interface StompTokenVerifier {
 

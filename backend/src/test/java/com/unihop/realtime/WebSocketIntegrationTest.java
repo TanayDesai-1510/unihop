@@ -7,10 +7,13 @@ import com.unihop.matching.RideOffer;
 import com.unihop.pricing.FareBreakdown;
 import com.unihop.ride.dto.DriverCard;
 import com.unihop.ride.dto.Hub;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
@@ -25,7 +28,10 @@ import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -53,6 +59,9 @@ class WebSocketIntegrationTest {
 
     @Autowired
     RealtimePublisher publisher;
+
+    @Value("${app.jwt.secret}")
+    String jwtSecret;
 
     final WebSocketStompClient client = new WebSocketStompClient(new StandardWebSocketClient());
     StompSession session;
@@ -121,6 +130,21 @@ class WebSocketIntegrationTest {
     }
 
     @Test
+    void driverConnectsWithSignedJwt() throws Exception {
+        session = connect("Authorization", "Bearer " + jwt(DRIVER1, jwtSecret));
+        BlockingQueue<JsonNode> offers = subscribe(Topics.driverOffers(DRIVER1));
+        UUID offerId = UUID.randomUUID();
+        publishUntilReceived(offers, () -> publisher.offerRevoked(DRIVER1, offerId));
+        assertThat(offers.poll(5, TimeUnit.SECONDS).get("offerId").asText()).isEqualTo(offerId.toString());
+    }
+
+    @Test
+    void connectWithForgedJwtFails() {
+        String forged = jwt(DRIVER1, "some-other-secret-some-other-secret-some-other");
+        assertThatThrownBy(() -> connect("Authorization", "Bearer " + forged)).isInstanceOf(ExecutionException.class);
+    }
+
+    @Test
     void connectWithoutCredentialsFails() {
         assertThatThrownBy(() -> connect(null, null)).isInstanceOf(ExecutionException.class);
     }
@@ -171,6 +195,15 @@ class WebSocketIntegrationTest {
         Thread.sleep(150);
         queue.clear();
         queue.add(first);
+    }
+
+    private static String jwt(UUID subject, String secret) {
+        Instant now = Instant.now();
+        return Jwts.builder().subject(subject.toString())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(7, ChronoUnit.DAYS)))
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)), Jwts.SIG.HS256)
+                .compact();
     }
 
     private static java.util.List<String> fieldNames(JsonNode node) {
