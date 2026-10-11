@@ -1,6 +1,7 @@
 "use client";
 
 import { Car, MapPinned } from "lucide-react";
+import { LogoLockup } from "@/components/brand/Wordmark";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/States";
 import type { UserMode } from "@/lib/types";
@@ -14,7 +15,10 @@ export function HomeStub({ mode, issue }: { mode: UserMode; issue: number }) {
 
   return (
     <div className="absolute inset-0 flex flex-col">
-      <header className="flex flex-col gap-4 px-5 pb-4 pt-[calc(env(safe-area-inset-top)+16px)]">
+      <header className="flex flex-col gap-4 px-5 pb-4 pt-[calc(env(safe-area-inset-top)+12px)]">
+        <div className="flex h-11 items-center">
+          <LogoLockup size={32} />
+        </div>
         <ModeToggle />
         <div className="h-[30px]">
           {status === "ready" && first ? (

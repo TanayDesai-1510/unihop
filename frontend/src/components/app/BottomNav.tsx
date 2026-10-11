@@ -61,7 +61,7 @@ export function BottomNav() {
                   className={cn(
                     "relative flex h-full flex-col items-center justify-center gap-1 text-caption",
                     "transition-[color,transform] duration-150 ease-ui active:scale-95",
-                    active ? "text-ink" : "text-ink-muted",
+                    active ? "text-brand" : "text-ink-muted",
                   )}
                 >
                   {active && (

@@ -5,9 +5,10 @@
 //   npm run screenshot                # default route list
 //   npm run screenshot -- /rider /payment@rider2 /dev/components:tall
 //
-// Route spec: <path>[@<seed user>][:tall]
+// Route spec: <path>[@<seed user>][:tall|:splash]
 //   @rider1 (default) | @rider2 | @driver1..@driver5 | @anon (signed out)
-//   :tall   captures a 375x6400 viewport, for long scroll pages like /dev/components
+//   :tall    captures a 375x6400 viewport, for long scroll pages like /dev/components
+//   :splash  keeps the first-load splash and captures it mid-animation (otherwise it's skipped)
 // Env: BASE_URL (default http://localhost:3000)
 import { chromium, type Browser } from "playwright";
 import { mkdirSync } from "node:fs";
@@ -33,6 +34,8 @@ const USERS: Record<string, string | null> = {
 
 /** Routes finished so far. Add each route here when its issue lands. */
 const DEFAULT_ROUTES = [
+  "/login@anon",
+  "/login@anon:splash",
   "/dev/components@anon:tall",
   "/rider",
   "/driver@driver1",
@@ -47,19 +50,21 @@ interface Shot {
   path: string;
   user: string;
   tall: boolean;
+  splash: boolean;
 }
 
 function parse(spec: string): Shot {
   const tall = spec.endsWith(":tall");
-  const body = tall ? spec.slice(0, -5) : spec;
+  const splash = spec.endsWith(":splash");
+  const body = tall || splash ? spec.slice(0, spec.lastIndexOf(":")) : spec;
   const [path, user = "rider1"] = body.split("@");
   if (!(user in USERS)) throw new Error(`Unknown user "${user}" in "${spec}". Use one of: ${Object.keys(USERS).join(", ")}`);
-  return { path, user, tall };
+  return { path, user, tall, splash };
 }
 
 function slug(s: Shot): string {
   const base = s.path === "/" ? "home" : s.path.replace(/^\//, "").replace(/[/[\]]+/g, "_");
-  return `${base}${s.user === "rider1" ? "" : `@${s.user}`}${s.tall ? "-tall" : ""}`;
+  return `${base}${s.user === "rider1" ? "" : `@${s.user}`}${s.tall ? "-tall" : ""}${s.splash ? "-splash" : ""}`;
 }
 
 async function capture(browser: Browser, shot: Shot, scheme: "light" | "dark"): Promise<{ file: string; errors: string[] }> {
@@ -73,10 +78,12 @@ async function capture(browser: Browser, shot: Shot, scheme: "light" | "dark"): 
   const token = USERS[shot.user];
   // Fresh mock state for every shot, signed in as the requested seed user.
   await context.addInitScript(
-    ({ token }) => {
+    ({ token, splash }) => {
       try {
         if (sessionStorage.getItem("shot-init")) return;
         sessionStorage.setItem("shot-init", "1");
+        // Skip the first-load splash unless this shot is about it.
+        if (!splash) sessionStorage.setItem("unihop.splash.v1", "1");
         localStorage.removeItem("unihop.mockdb.v1");
         if (token) localStorage.setItem("unihop.token", `mock.${token}`);
         else localStorage.removeItem("unihop.token");
@@ -84,7 +91,7 @@ async function capture(browser: Browser, shot: Shot, scheme: "light" | "dark"): 
         // storage blocked: shot proceeds signed out
       }
     },
-    { token },
+    { token, splash: shot.splash },
   );
   const page = await context.newPage();
   const errors: string[] = [];
@@ -93,8 +100,15 @@ async function capture(browser: Browser, shot: Shot, scheme: "light" | "dark"): 
     if (m.type() === "error") errors.push(m.text());
   });
 
-  await page.goto(BASE_URL + shot.path, { waitUntil: "networkidle" });
-  await page.waitForTimeout(SETTLE_MS);
+  if (shot.splash) {
+    // Mid-animation: after the spring scale-in, before the fade.
+    await page.goto(BASE_URL + shot.path, { waitUntil: "commit" });
+    await page.waitForSelector(".unihop-splash img", { state: "visible" });
+    await page.waitForTimeout(450);
+  } else {
+    await page.goto(BASE_URL + shot.path, { waitUntil: "networkidle" });
+    await page.waitForTimeout(SETTLE_MS);
+  }
   const file = join(OUT_DIR, `${slug(shot)}-${scheme}.png`);
   await page.screenshot({ path: file });
   await context.close();

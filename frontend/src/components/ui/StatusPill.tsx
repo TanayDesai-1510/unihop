@@ -1,21 +1,22 @@
 import type { PaymentStatus, RideStatus } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
-export type StatusTone = "live" | "success" | "pending" | "muted" | "danger";
+export type StatusTone = "live" | "brand" | "success" | "pending" | "muted" | "danger";
 
 const DOT: Record<StatusTone, string> = {
-  live: "bg-brand",
+  live: "bg-accent",
+  brand: "bg-brand",
   success: "bg-success",
   pending: "bg-warning",
   muted: "bg-ink-muted",
   danger: "bg-danger",
 };
 
-/** Rider-facing copy and tone for each ride status (DESIGN.md: brand in progress, success done, warning pending). */
+/** Rider-facing copy and tone per ride status (DESIGN.md: accent for live, brand for accepted, success done, warning pending). */
 export const RIDE_STATUS_UI: Record<RideStatus, { label: string; tone: StatusTone }> = {
   REQUESTED: { label: "Finding driver", tone: "pending" },
-  ACCEPTED: { label: "Driver on the way", tone: "live" },
-  ARRIVED: { label: "Driver arrived", tone: "live" },
+  ACCEPTED: { label: "Driver on the way", tone: "brand" },
+  ARRIVED: { label: "Driver arrived", tone: "brand" },
   IN_PROGRESS: { label: "On trip", tone: "live" },
   COMPLETED: { label: "Completed", tone: "success" },
   CANCELLED: { label: "Cancelled", tone: "muted" },

@@ -47,7 +47,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         ref={scope}
         className={cn(
           "flex h-[52px] items-center gap-3 rounded-input bg-surface px-4",
-          "ring-inset transition-shadow duration-150 ease-ui focus-within:ring-2 focus-within:ring-ink",
+          "ring-inset transition-shadow duration-150 ease-ui focus-within:ring-2 focus-within:ring-brand",
           error && "ring-2 ring-danger focus-within:ring-danger",
         )}
       >

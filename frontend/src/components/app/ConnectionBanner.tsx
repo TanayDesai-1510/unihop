@@ -53,7 +53,7 @@ export function ConnectionBanner() {
             animate={{ opacity: 1, y: 0 }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, y: -16 }}
             transition={reduce ? fadeUI : springUI}
-            className="flex h-9 items-center gap-2 rounded-full bg-ink px-4 text-label text-on-ink shadow-float"
+            className="flex h-9 items-center gap-2 rounded-full bg-brand px-4 text-label text-on-brand shadow-float"
           >
             {online ? <Spinner size={16} /> : <WifiOff aria-hidden size={20} strokeWidth={2} />}
             {online ? "Reconnecting…" : "You're offline. Reconnecting when you're back."}

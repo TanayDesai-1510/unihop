@@ -12,14 +12,14 @@ export interface SwitchProps {
   "aria-label"?: string;
   id?: string;
   disabled?: boolean;
-  /** Track color when on. Brand for selection (UniHop Cash), success for online. */
-  tone?: "brand" | "success" | "ink";
+  /** Track color when on. Brand by default (selection, online); accent only for something live. */
+  tone?: "brand" | "success" | "accent";
 }
 
-const ON: Record<NonNullable<SwitchProps["tone"]>, string> = { brand: "bg-brand", success: "bg-success", ink: "bg-ink" };
+const ON: Record<NonNullable<SwitchProps["tone"]>, string> = { brand: "bg-brand", success: "bg-success", accent: "bg-accent" };
 
 /** 51x31 toggle with a spring thumb; 44px+ hit area. */
-export function Switch({ checked, onChange, disabled, tone = "ink", id, ...aria }: SwitchProps) {
+export function Switch({ checked, onChange, disabled, tone = "brand", id, ...aria }: SwitchProps) {
   const reduce = useReducedMotion();
   return (
     <button
@@ -45,7 +45,7 @@ export function Switch({ checked, onChange, disabled, tone = "ink", id, ...aria 
         aria-hidden
         animate={{ x: checked ? 20 : 0 }}
         transition={reduce ? fadeUI : springUI}
-        className="size-[27px] rounded-full bg-knob shadow-[0_2px_6px_rgba(14,17,22,0.18)]"
+        className="size-[27px] rounded-full bg-knob shadow-knob"
       />
     </button>
   );
