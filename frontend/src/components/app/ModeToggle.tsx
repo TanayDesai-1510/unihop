@@ -16,7 +16,7 @@ import { homeFor, useSession } from "./SessionProvider";
  * Rider/Driver switch. Calls PATCH /api/users/me; a 409 DRIVER_NOT_ONBOARDED sends the user to
  * driver onboarding with an explanation instead of failing silently.
  */
-export function ModeToggle({ className }: { className?: string }) {
+export function ModeToggle({ className, compact = false }: { className?: string; compact?: boolean }) {
   const { user, status, setMode } = useSession();
   const router = useRouter();
   const toast = useToast();
@@ -52,8 +52,8 @@ export function ModeToggle({ className }: { className?: string }) {
       value={pending ?? user.mode}
       onChange={change}
       options={[
-        { value: "RIDER", label: "Ride", icon: <UserRound aria-hidden size={20} strokeWidth={2} /> },
-        { value: "DRIVER", label: "Drive", icon: <Car aria-hidden size={20} strokeWidth={2} /> },
+        { value: "RIDER", label: "Ride", icon: compact ? undefined : <UserRound aria-hidden size={20} strokeWidth={2} /> },
+        { value: "DRIVER", label: "Drive", icon: compact ? undefined : <Car aria-hidden size={20} strokeWidth={2} /> },
       ]}
     />
   );

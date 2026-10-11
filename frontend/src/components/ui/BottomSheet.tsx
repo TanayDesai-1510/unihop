@@ -17,6 +17,8 @@ export interface BottomSheetProps {
   /** Controlled snap index. */
   snap?: number;
   onSnapChange?: (index: number) => void;
+  /** Visible height (px) of the detent the sheet is heading to. For camera padding behind it. */
+  onHeightChange?: (px: number) => void;
   /** Allow dragging below the lowest snap to close. */
   dismissible?: boolean;
   onDismiss?: () => void;
@@ -38,6 +40,7 @@ export function BottomSheet({
   defaultSnap = 0,
   snap,
   onSnapChange,
+  onHeightChange,
   dismissible = false,
   onDismiss,
   header,
@@ -75,6 +78,19 @@ export function BottomSheet({
     return () => ro.disconnect();
   }, []);
 
+  // Report the visible height of the detent we're heading to (map camera padding).
+  const reportedH = useRef(-1);
+  const report = useCallback(
+    (i: number) => {
+      const h = Math.round(heights[Math.max(0, Math.min(heights.length - 1, i))] ?? 0);
+      if (h && h !== reportedH.current) {
+        reportedH.current = h;
+        onHeightChange?.(h);
+      }
+    },
+    [heights, onHeightChange],
+  );
+
   // Place the sheet at its snap without animating on first measure / resize.
   const placed = useRef(false);
   useLayoutEffect(() => {
@@ -82,8 +98,39 @@ export function BottomSheet({
     if (!placed.current) {
       y.set(yFor(index));
       placed.current = true;
+      report(index);
     }
-  }, [containerH, index, y, yFor]);
+  }, [containerH, index, y, yFor, report]);
+
+  // A state swapped the detents (ride flow): keep the sheet's on-screen edge where it is this
+  // frame (no jump), then spring to the matching detent in the new set.
+  const snapKey = snapPoints.join("|");
+  // New detent set: clamp the index during render (no effect setState).
+  const [renderedKey, setRenderedKey] = useState(snapKey);
+  if (renderedKey !== snapKey) {
+    setRenderedKey(snapKey);
+    const clamped = Math.max(0, Math.min(snapPoints.length - 1, snap ?? index));
+    if (clamped !== index) setIndex(clamped);
+  }
+  const prevKey = useRef(snapKey);
+  const prevMaxH = useRef(maxH);
+  useLayoutEffect(() => {
+    if (!placed.current || !containerH) {
+      prevKey.current = snapKey;
+      prevMaxH.current = maxH;
+      return;
+    }
+    if (prevKey.current === snapKey && prevMaxH.current === maxH) return;
+    const keyChanged = prevKey.current !== snapKey;
+    y.set(y.get() + (maxH - prevMaxH.current));
+    prevKey.current = snapKey;
+    prevMaxH.current = maxH;
+    if (!keyChanged) return;
+    const next = Math.max(0, Math.min(snapPoints.length - 1, index));
+    animate(y, maxH - heights[next], reduce ? { ...fadeUI, duration: 0.15 } : springSheet);
+    report(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapKey, maxH, containerH]);
 
   const settle = useCallback(
     (target: number, velocity = 0, onDone?: () => void) => {
@@ -99,9 +146,10 @@ export function BottomSheet({
       if (next !== index) haptic("tick");
       setIndex(next);
       onSnapChange?.(next);
+      report(next);
       settle(yFor(next), velocity);
     },
-    [index, onSnapChange, settle, topIndex, yFor],
+    [index, onSnapChange, settle, topIndex, yFor, report],
   );
 
   // Controlled mode: adopt a new `snap` prop during render, then animate to it.
@@ -113,6 +161,7 @@ export function BottomSheet({
   useEffect(() => {
     if (snap === undefined || !placed.current) return;
     settle(yFor(snap));
+    report(snap);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snap]);
 

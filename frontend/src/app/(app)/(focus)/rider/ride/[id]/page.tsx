@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { ParamRouteStub } from "@/components/ParamRouteStub";
+import { RiderRideScreen } from "@/components/rider/RiderRideScreen";
 
 export default function RiderRidePage() {
   return (
-    <Suspense fallback={null}>
-      <ParamRouteStub title="Your ride" issue={35} />
+    <Suspense fallback={<div className="absolute inset-0 bg-surface" />}>
+      <RiderRideScreen />
     </Suspense>
   );
 }

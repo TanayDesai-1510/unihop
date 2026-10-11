@@ -487,3 +487,24 @@ body {
     backdrop-filter: none;
   }
 }
+
+/* Small floating glass chip over the map (top bar logo, mode toggle). */
+.glass-chip {
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: var(--shadow-float);
+  border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-chip {
+    background: var(--surface-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Ride map: keep Leaflet's top controls (attribution) below the floating top bar. */
+.ride-map .leaflet-top {
+  top: calc(env(safe-area-inset-top) + 66px);
+}

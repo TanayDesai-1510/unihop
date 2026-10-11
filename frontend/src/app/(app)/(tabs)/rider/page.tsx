@@ -1,5 +1,5 @@
-import { HomeStub } from "@/components/app/HomeStub";
+import { RiderFlow } from "@/components/rider/RiderFlow";
 
 export default function RiderHomePage() {
-  return <HomeStub mode="RIDER" issue={33} />;
+  return <RiderFlow />;
 }

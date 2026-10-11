@@ -14,8 +14,16 @@ export const TILES = {
   light: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
   dark: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
   attribution: "Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors",
-  maxZoom: 16,
+  /**
+   * Canvas tiles exist to z16 (z17+ returns "map data not yet available" placeholders). detectRetina
+   * requests one zoom deeper, so cap native zoom at 15 and let Leaflet upscale beyond it.
+   */
+  maxNativeZoom: 15,
+  maxZoom: 19,
 } as const;
+
+/** Tile layer options shared by every map. */
+export const tileOptions = { attribution: TILES.attribution, maxNativeZoom: TILES.maxNativeZoom, maxZoom: TILES.maxZoom, detectRetina: true } as const;
 
 export function prefersDark(): boolean {
   const forced = document.documentElement.dataset.theme;
