@@ -1,9 +1,12 @@
 "use client";
 
-import { ArrowRight, Banknote, CircleDot, Clock3, MapPin, Plus, Search, Wallet } from "lucide-react";
+import { ArrowRight, Banknote, CircleDot, Clock3, MapPin, Monitor, Moon, Play, Plus, Search, Sun, Wallet } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useState, type ReactNode } from "react";
 import { Screen } from "@/components/app/Screen";
-import { Logo } from "@/components/app/Logo";
+import { Logo } from "@/components/brand/Logo";
+import { SplashOverlay } from "@/components/brand/Splash";
+import { LogoLockup, Wordmark } from "@/components/brand/Wordmark";
 import {
   Badge,
   BottomSheet,
@@ -26,12 +29,20 @@ import {
 import { API_URL, checkHealth, USE_MOCKS } from "@/lib/api";
 import { RIDE_STATUSES } from "@/lib/types";
 
+// Leaflet needs window: client-only.
+const BrandMapPreview = dynamic(() => import("@/components/brand/BrandMapPreview"), {
+  ssr: false,
+  loading: () => <Skeleton rounded="card" className="h-full w-full" />,
+});
+
 /** Every component and variant in one place for design review. Not linked from the app. */
 export default function ComponentsPage() {
   return (
-    <Screen title="Components" subtitle="UniHop design system, DESIGN.md section 6">
+    <Screen title="Components" subtitle="UniHop design system, DESIGN.md" action={<ThemeSwitch />}>
       <div className="flex flex-col gap-10">
         <BackendStatus />
+        <Brand />
+        <MapStyle />
         <Tokens />
         <Typography />
         <Buttons />
@@ -70,7 +81,7 @@ function BackendStatus() {
     <Section title="Environment">
       <Card className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <Logo />
+          <LogoLockup size={28} />
           <StatusPill
             tone={status === "up" ? "success" : status === "down" ? "muted" : "pending"}
             label={status === "up" ? "Backend online" : status === "down" ? "Backend offline" : "Checking"}
@@ -84,7 +95,7 @@ function BackendStatus() {
   );
 }
 
-const TOKENS = ["bg", "surface", "surface-raised", "ink", "ink-muted", "line", "brand", "brand-soft", "success", "warning", "danger"];
+const TOKENS = ["brand", "brand-strong", "brand-soft", "accent", "accent-soft", "bg", "surface", "surface-raised", "ink", "ink-muted", "line", "success", "warning", "danger"];
 
 function Tokens() {
   return (
@@ -121,7 +132,7 @@ function Buttons() {
   return (
     <Section title="Button">
       <div className="flex flex-col gap-3">
-        <Button variant="brand">Request UniHop</Button>
+        <Button variant="accent">Request UniHop</Button>
         <Button variant="primary" trailingIcon={<ArrowRight aria-hidden size={20} strokeWidth={2} />}>
           Continue
         </Button>
@@ -140,7 +151,7 @@ function Buttons() {
         >
           Tap to load
         </Button>
-        <Button variant="brand" disabledReason="Pick a dropoff first.">
+        <Button variant="primary" disabledReason="Pick a dropoff first.">
           Disabled with reason (tap me)
         </Button>
         <Button variant="primary" disabled>
@@ -249,6 +260,7 @@ function Badges() {
       <div className="flex flex-wrap gap-2">
         <Badge>Default</Badge>
         <Badge tone="brand">Selected</Badge>
+        <Badge tone="accent">Live</Badge>
         <Badge tone="success">Paid</Badge>
         <Badge tone="warning">Expiring</Badge>
         <Badge tone="danger">Declined</Badge>
@@ -278,7 +290,7 @@ function Controls() {
           leading={<Banknote aria-hidden size={20} strokeWidth={2} />}
           title="Use UniHop Cash"
           subtitle="$5.00 available"
-          trailing={<Switch aria-label="Use UniHop Cash" checked={cash} onChange={setCash} tone="brand" />}
+          trailing={<Switch aria-label="Use UniHop Cash" checked={cash} onChange={setCash} />}
         />
         <ListRow title={online ? "You're online" : "You're offline"} trailing={<Switch aria-label="Online" checked={online} onChange={setOnline} tone="success" />} />
       </Card>
@@ -365,10 +377,103 @@ function Sheet() {
               <ListRow key={h} leading={<MapPin aria-hidden size={20} strokeWidth={2} />} title={h} subtitle="Hub" chevron onClick={() => {}} />
             ))}
           </div>
-          <Button variant="brand" className="mt-4">
-            Request UniHop
+          <Button variant="primary" className="mt-4">
+            Confirm pickup
           </Button>
         </BottomSheet>
+      </div>
+    </Section>
+  );
+}
+
+type Theme = "system" | "light" | "dark";
+
+/** Forces light or dark for this page only (sets data-theme on <html>; cleared on leave). */
+function ThemeSwitch() {
+  const [theme, setTheme] = useState<Theme>("system");
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "system") delete root.dataset.theme;
+    else root.dataset.theme = theme;
+    window.dispatchEvent(new Event("unihop:theme"));
+  }, [theme]);
+  useEffect(() => () => void delete document.documentElement.dataset.theme, []);
+  return (
+    <SegmentedControl<Theme>
+      aria-label="Theme"
+      className="w-[132px] shrink-0"
+      value={theme}
+      onChange={setTheme}
+      options={[
+        { value: "system", label: "", ariaLabel: "System theme", icon: <Monitor aria-hidden size={20} strokeWidth={2} /> },
+        { value: "light", label: "", ariaLabel: "Light theme", icon: <Sun aria-hidden size={20} strokeWidth={2} /> },
+        { value: "dark", label: "", ariaLabel: "Dark theme", icon: <Moon aria-hidden size={20} strokeWidth={2} /> },
+      ]}
+    />
+  );
+}
+
+function Brand() {
+  const [splashKey, setSplashKey] = useState(0);
+  const [showSplash, setShowSplash] = useState(false);
+  const replay = () => {
+    setSplashKey((k) => k + 1);
+    setShowSplash(true);
+    setTimeout(() => setShowSplash(false), 620);
+  };
+  return (
+    <Section title="Brand">
+      <Card className="flex flex-col gap-5">
+        <div className="flex items-end gap-5">
+          <figure className="flex flex-col items-center gap-2">
+            <Logo variant="icon" size={64} />
+            <figcaption className="text-caption text-ink-muted">icon</figcaption>
+          </figure>
+          <figure className="flex flex-col items-center gap-2">
+            <Logo variant="mark" size={64} />
+            <figcaption className="text-caption text-ink-muted">mark (auto)</figcaption>
+          </figure>
+          <figure className="flex flex-col items-center gap-2">
+            <span className="flex size-16 items-center justify-center rounded-card bg-brand-logo">
+              <Logo variant="mark" onBrand size={48} />
+            </span>
+            <figcaption className="text-caption text-ink-muted">mark on brand</figcaption>
+          </figure>
+          <figure className="flex flex-col items-center gap-2">
+            <Logo variant="icon" size={24} />
+            <figcaption className="text-caption text-ink-muted">24px</figcaption>
+          </figure>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Wordmark size="lg" />
+          <Wordmark size="md" />
+          <LogoLockup size={32} />
+        </div>
+        <p className="text-label font-normal text-ink-muted">
+          The extracted mark is white, so on light surfaces it falls back to the full icon. Dark mode shows the mark.
+        </p>
+      </Card>
+      <div className="relative h-[280px] overflow-hidden rounded-card border border-line bg-surface">
+        <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+          <p className="text-label font-normal text-ink-muted">Splash plays once per session, under 1.2s.</p>
+          <Button variant="secondary" size="md" block={false} leadingIcon={<Play aria-hidden size={20} strokeWidth={2} />} onClick={replay}>
+            Replay splash
+          </Button>
+        </div>
+        <SplashOverlay key={splashKey} show={showSplash} contained />
+      </div>
+    </Section>
+  );
+}
+
+function MapStyle() {
+  return (
+    <Section title="Map">
+      <p className="text-label font-normal text-ink-muted">
+        Route like the logo&apos;s road, navy hub pins, logo pins for pickup (pulsing) and dropoff, accent live car.
+      </p>
+      <div className="relative h-[360px] overflow-hidden rounded-card border border-line">
+        <BrandMapPreview />
       </div>
     </Section>
   );

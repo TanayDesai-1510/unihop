@@ -8,30 +8,48 @@ UniHop should feel like a real, shipped rideshare app built by a confident team:
 - One primary action per screen, always obvious
 - Numbers (fares, ETAs, earnings) are big, bold, and easy to scan
 - State changes (searching, driver found, arrived) feel alive through motion, not text walls
-- Never looks like a template: no default Tailwind blue, no purple gradients, no stock emoji icons
+- Never looks like a template: no default Tailwind colors, no purple gradients, no stock emoji icons
+- Feels unmistakably UniHop: navy, white, and a confident orange spark, straight from the logo
 
-## 2. Color tokens
+## 2. Brand and color tokens
+
+### Logo
+The UniHop logo is a white location pin wearing a graduation cap, with a winding road (one orange lane, one white lane with dashes) running through it, on a navy rounded square. It says: students, place, journey.
+- Source file: `public/brand/logo-source.png`. Derived assets live in `public/brand/` (see the setup prompt).
+- App icon / favicon / PWA icons: the full navy rounded-square version.
+- In-app mark (top bar, login, splash, receipt): the pin mark on a transparent background, or the full icon at small sizes. Never stretch, recolor, rotate, add effects, or place the navy icon on a navy surface without a white or light container.
+- Wordmark: "UniHop" set in Geist 700, "Uni" in `--brand`, "Hop" in `--accent`. In dark mode "Uni" uses `--ink`.
+- Minimum clear space around the mark: 25% of its width.
+
+### Colors (taken from the logo)
 Define as CSS variables in `globals.css` and expose through Tailwind. Light mode is the default; dark mode follows `prefers-color-scheme`.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg` | #FFFFFF | #0E1116 | App background |
-| `--surface` | #F5F6F8 | #171B22 | Cards, inputs, secondary areas |
-| `--surface-raised` | #FFFFFF | #1E232C | Bottom sheets, modals |
-| `--ink` | #0E1116 | #F2F4F7 | Primary text, primary buttons |
-| `--ink-muted` | #5B6472 | #9AA3B2 | Secondary text, labels |
-| `--line` | #E4E7EC | #2A303B | Dividers, borders |
-| `--brand` | #FF4D3D | #FF5C4D | UniHop accent: brand moments, active states, live markers |
-| `--brand-soft` | #FFF0EE | #3A1D1A | Brand tints, selected rows |
+| `--brand` | #002E73 | #5B8DEF | UniHop navy: primary buttons, active nav, links, selected states, headers |
+| `--brand-strong` | #001F4F | #8DB0F5 | Pressed states, high-emphasis text on brand-soft |
+| `--brand-soft` | #E8EEF8 | #13254A | Selected rows, info backgrounds, chips |
+| `--accent` | #FE6531 | #FF7A4D | UniHop orange: hero CTAs (Request UniHop, Accept), live route line, live car marker, offer countdown, active ride status |
+| `--accent-soft` | #FFEFE8 | #3D2015 | Accent tints, highlight backgrounds |
+| `--bg` | #FFFFFF | #0A1222 | App background (dark mode is navy-tinted, not pure gray) |
+| `--surface` | #F4F6FA | #111B2F | Cards, inputs, secondary areas |
+| `--surface-raised` | #FFFFFF | #17233B | Bottom sheets, modals |
+| `--ink` | #0B1630 | #F2F5FA | Primary text |
+| `--ink-muted` | #5A6478 | #98A3B8 | Secondary text, labels |
+| `--line` | #E1E6EF | #24314D | Dividers, borders |
+| `--on-brand` | #FFFFFF | #FFFFFF | Text and icons on brand or accent fills |
 | `--success` | #12A150 | #2CC56F | Completed, captured, earnings |
-| `--warning` | #E89A0C | #F2B233 | Pending, expiring offer |
-| `--danger` | #E5383B | #FF5A5D | Declines, cancel, SOS |
+| `--warning` | #E8A317 | #F2BE45 | Pending states (kept yellow so it never reads as the orange accent) |
+| `--danger` | #D92D20 | #FF5A50 | Declines, cancel, SOS |
 
 Rules:
-- Primary buttons are **ink** (black in light, near-white in dark). Brand red is the accent, not every button.
-- Brand red is used for: the logo, the rider's live position/route, the active ride status, the driver offer countdown ring, and selected states.
-- Never put brand red and danger red next to each other. Cancel/decline uses outlined or ghost styling, not a red fill, except SOS.
-- Text contrast meets WCAG AA.
+- Navy carries the app; orange is the spark. Roughly 60% neutrals, 30% navy, 10% orange. If a screen has more than two orange elements, one of them is wrong.
+- Orange is reserved for: the single hero CTA on a screen, things that are live or moving (route line, car marker, countdown, in-progress status), and the wordmark "Hop".
+- The rider's route on the map is drawn like the logo's road: an orange line with a thin white casing.
+- Map pins for hubs use a small navy pin; the selected pickup/dropoff uses the logo pin shape.
+- Cancel and decline use outlined or ghost styling, never an orange or red fill (except SOS).
+- Text contrast meets WCAG AA. White text on `--accent` must be 16px+ and semibold or larger.
+- Never use default Tailwind palette colors directly; always tokens.
 
 ## 3. Typography
 Font: **Geist** (already bundled with Next.js), fallback `system-ui, sans-serif`. Use `font-variant-numeric: tabular-nums` for every price, ETA, timer, and earnings figure.
@@ -62,12 +80,12 @@ Minimum body size is 16px (prevents iOS zoom on inputs).
 ## 6. Components
 Build these once in `src/components/ui/` and reuse everywhere.
 
-- **Button**: height 52, full width by default, radius 14, Headline-weight text. Variants: primary (ink fill), brand (brand fill, only for "Request UniHop" and "Accept"), secondary (surface fill), ghost (text only), danger-outline. Loading state shows a spinner and keeps width fixed. Pressed state scales to 0.98.
-- **Input**: height 52, surface fill, no border until focus (2px ink ring), label above, error text below in danger.
+- **Button**: height 52, full width by default, radius 14, Headline-weight text. Variants: primary (brand navy fill), accent (orange fill, only the one hero CTA per screen like "Request UniHop" and "Accept"), secondary (surface fill), ghost (text only), danger-outline. Loading state shows a spinner and keeps width fixed. Pressed state scales to 0.98.
+- **Input**: height 52, surface fill, no border until focus (2px brand ring), label above, error text below in danger.
 - **Card**: surface-raised, radius 16, padding 16.
 - **ListRow**: 56 to 64 tall, leading icon or avatar, title + secondary text, trailing value or chevron. Used for hubs, payment methods, rides.
 - **BottomSheet**: drag handle (36x4, ink-muted at 30%), radius 24 top, snap points, backdrop only when full.
-- **StatusPill**: caption text, small dot, colors by status (brand for in-progress states, success for completed, warning for pending, ink-muted for cancelled).
+- **StatusPill**: caption text, small dot, colors by status (accent for live in-progress states, brand for accepted/scheduled, success for completed, warning for pending, ink-muted for cancelled).
 - **Badge** for card brands: text-based (VISA, MC, AMEX, DISC) in a small rounded rectangle, not logo artwork.
 - **Toast**: top of screen, auto-dismiss 3s, for success and non-blocking errors.
 - **Skeleton** loaders matching the real layout shape, never a centered spinner on a blank page.
@@ -77,19 +95,20 @@ Build these once in `src/components/ui/` and reuse everywhere.
 Use `motion` (Framer Motion) for sheets and state transitions; CSS for small things.
 - Durations: 150ms (press, toggles), 250ms (sheets, cards in/out), 400ms (major state changes). Easing: `cubic-bezier(0.2, 0.8, 0.2, 1)`.
 - Ride states cross-fade and slide within the same sheet rather than jumping to a new page.
-- Finding driver: pulsing brand ring around the pickup pin.
-- Driver offer: circular countdown ring (15s) in brand, turning warning in the last 5s.
+- Finding driver: pulsing accent ring around the logo-shaped pickup pin.
+- Driver offer: circular countdown ring (15s) in accent, turning danger in the last 5s.
 - Live car marker glides between location updates (interpolate, don't teleport) and rotates to heading.
 - Card decline: input row shakes once (200ms) plus the error message.
 - Respect `prefers-reduced-motion`: replace movement with fades.
 
 ## 8. Key screens
-- **Login**: logo + one line value prop ("Every ride under $10. Students only."), scarletmail input, then a 6-box OTP input with auto-advance and paste support. The dev OTP shows as a small hint card ("Demo code: 123456").
-- **Rider home**: map with hub pins, sheet titled "Where to?", pickup and dropoff as ListRows, then a fare card (big fare, "Under $10, always" caption), payment row ("Visa •••• 4242", tap to change), UniHop Cash toggle, and a brand "Request UniHop" button.
+- **Splash**: logo icon centered on `--brand`, scales in with a soft spring, road lane draws in, then fades to login or home (under 1.2s total, skipped on repeat visits).
+- **Login**: logo mark + wordmark + one line value prop ("Every ride under $10. Students only."), scarletmail input, then a 6-box OTP input with auto-advance and paste support. The dev OTP shows as a small hint card ("Demo code: 123456").
+- **Rider home**: map with hub pins, sheet titled "Where to?", pickup and dropoff as ListRows, then a fare card (big fare, "Under $10, always" caption), payment row ("Visa •••• 4242", tap to change), UniHop Cash toggle, and an accent "Request UniHop" button.
 - **Finding driver**: pulsing pin, "Finding your driver" with live elapsed time, cancel ghost button.
 - **Active ride (rider)**: driver card (name, rating, car color + model, plate in a bold plate-style box), large 4-digit PIN with "Share this with your driver", status timeline (Accepted, Arrived, In progress), ETA in Display style, share trip and SOS actions.
-- **Driver home**: big online/offline toggle (offline = ink-muted, online = success with "You're online" pill), today's earnings summary card.
-- **Driver offer**: full-width sheet slides up with haptic-style bounce, pickup to dropoff, distance to pickup, big "You earn $X.XX", countdown ring, Accept (brand) and Decline (ghost).
+- **Driver home**: big online/offline toggle (offline = ink-muted, online = brand fill with an accent glow and a "You're online" pill), today's earnings summary card.
+- **Driver offer**: full-width sheet slides up with haptic-style bounce, pickup to dropoff, distance to pickup, big "You earn $X.XX", countdown ring, Accept (accent) and Decline (ghost).
 - **Driver active ride**: navigation-style top card with next step, "I've arrived", PIN entry (4 boxes), "Complete ride".
 - **Receipt**: success check animation, fare in Display, breakdown rows (Rider paid, Platform & safety fee, Driver earns), payment method row, star rating (large, tappable), optional comment.
 - **Payment**: UniHop Cash card at top (balance, Add funds), then saved methods as ListRows with brand badges, default marked with a check, swipe or menu to delete, "Add payment method" opens a sheet: Card, Apple Pay, Google Pay.

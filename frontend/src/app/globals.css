@@ -1,32 +1,41 @@
 @import "tailwindcss";
 
-/* UniHop design tokens. Source of truth: frontend/DESIGN.md. Do not change values without asking. */
+/* UniHop design tokens. Source of truth: frontend/DESIGN.md section 2 (colors taken from the logo).
+   Do not change values without asking. */
 :root {
+  --brand: #002e73;
+  --brand-strong: #001f4f;
+  --brand-soft: #e8eef8;
+  --accent: #fe6531;
+  --accent-soft: #ffefe8;
   --bg: #ffffff;
-  --surface: #f5f6f8;
+  --surface: #f4f6fa;
   --surface-raised: #ffffff;
-  --ink: #0e1116;
-  --ink-muted: #5b6472;
-  --line: #e4e7ec;
-  --brand: #ff4d3d;
-  --brand-soft: #fff0ee;
+  --ink: #0b1630;
+  --ink-muted: #5a6478;
+  --line: #e1e6ef;
+  --on-brand: #ffffff;
   --success: #12a150;
-  --warning: #e89a0c;
-  --danger: #e5383b;
+  --warning: #e8a317;
+  --danger: #d92d20;
 
-  /* Text drawn on top of a filled color. White on brand is 3.3:1 (fails WCAG AA for
-     18px labels), so brand fills carry dark text in both modes (5.8:1 light, 6.2:1 dark). */
-  --on-ink: #ffffff;
-  --on-brand: #0e1116;
+  /* Text on accent fills. DESIGN.md: white, 16px+ semibold. Measured 2.95:1 light / 2.58:1 dark,
+     below WCAG AA; kept as its own token so swapping to --ink (6.1:1) is a one-line change. */
+  --on-accent: #ffffff;
 
   /* Elevation (DESIGN.md section 4). Dark mode swaps shadows for borders. */
   --shadow-sheet: 0 -8px 30px rgba(14, 17, 22, 0.12);
   --shadow-float: 0 4px 16px rgba(14, 17, 22, 0.08);
   --border-elevated: transparent;
-  /* Backdrop behind full-height sheets: always near-black, opacity set by the component. */
-  --scrim: #0e1116;
-  /* Switch thumb: white in both modes, like iOS. */
+  /* Backdrop behind full-height sheets (navy-black); opacity set by the component. */
+  --scrim: #0a1222;
+  /* Switch thumb and the white casing around the map route (the logo's white lane). */
   --knob: #ffffff;
+  /* The logo's own navy, constant in both modes: surfaces that carry the logo (splash, entry
+     screen, mark tiles) so dark mode doesn't recolor it to the lighter dark --brand. */
+  --brand-logo: #002e73;
+  --shadow-knob: 0 2px 6px rgba(14, 17, 22, 0.18);
+  --route-casing: #ffffff;
 
   /* Motion (DESIGN.md section 7). */
   --ease-out-ui: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -34,22 +43,27 @@
   color-scheme: light;
 }
 
+/* Dark tokens apply when the OS prefers dark (unless a page forces data-theme="light"), or when
+   data-theme="dark" is set (the /dev/components theme switch). Keep the two blocks identical. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e1116;
-    --surface: #171b22;
-    --surface-raised: #1e232c;
-    --ink: #f2f4f7;
-    --ink-muted: #9aa3b2;
-    --line: #2a303b;
-    --brand: #ff5c4d;
-    --brand-soft: #3a1d1a;
+  :root:not([data-theme="light"]) {
+    --brand: #5b8def;
+    --brand-strong: #8db0f5;
+    --brand-soft: #13254a;
+    --accent: #ff7a4d;
+    --accent-soft: #3d2015;
+    --bg: #0a1222;
+    --surface: #111b2f;
+    --surface-raised: #17233b;
+    --ink: #f2f5fa;
+    --ink-muted: #98a3b8;
+    --line: #24314d;
+    --on-brand: #ffffff;
     --success: #2cc56f;
-    --warning: #f2b233;
-    --danger: #ff5a5d;
+    --warning: #f2be45;
+    --danger: #ff5a50;
 
-    --on-ink: #0e1116;
-    --on-brand: #0e1116;
+    --on-accent: #ffffff;
 
     --shadow-sheet: none;
     --shadow-float: none;
@@ -59,23 +73,66 @@
   }
 }
 
+:root[data-theme="dark"] {
+  --brand: #5b8def;
+  --brand-strong: #8db0f5;
+  --brand-soft: #13254a;
+  --accent: #ff7a4d;
+  --accent-soft: #3d2015;
+  --bg: #0a1222;
+  --surface: #111b2f;
+  --surface-raised: #17233b;
+  --ink: #f2f5fa;
+  --ink-muted: #98a3b8;
+  --line: #24314d;
+  --on-brand: #ffffff;
+  --success: #2cc56f;
+  --warning: #f2be45;
+  --danger: #ff5a50;
+
+  --on-accent: #ffffff;
+
+  --shadow-sheet: none;
+  --shadow-float: none;
+  --border-elevated: var(--line);
+
+  color-scheme: dark;
+}
+
+/* Tailwind dark: follows the same rule as the tokens. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:not(:where([data-theme="light"], [data-theme="light"] *)) {
+      @slot;
+    }
+  }
+}
+
 @theme inline {
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
   --color-line: var(--line);
-  --color-brand: var(--brand);
-  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+  --color-on-accent: var(--on-accent);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --color-on-ink: var(--on-ink);
-  --color-on-brand: var(--on-brand);
   --color-elevated-border: var(--border-elevated);
   --color-scrim: var(--scrim);
   --color-knob: var(--knob);
+  --color-brand-logo: var(--brand-logo);
+  --color-route-casing: var(--route-casing);
 
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -112,6 +169,7 @@
 
   --shadow-sheet: var(--shadow-sheet);
   --shadow-float: var(--shadow-float);
+  --shadow-knob: var(--shadow-knob);
 
   --ease-ui: var(--ease-out-ui);
 }
@@ -137,7 +195,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
@@ -178,4 +236,111 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* Splash: hidden before first paint on repeat visits (see components/brand/Splash.tsx). */
+:root[data-splash="done"] .unihop-splash {
+  display: none;
+}
+
+/* ---------- Map styling (components/brand/map.ts). Leaflet draws SVG paths and HTML markers;
+   these classes give them token colors so light and dark both follow DESIGN.md section 2. ---------- */
+.leaflet-container {
+  background: var(--surface);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Route drawn like the logo's road: orange lane over a thin white casing. */
+.unihop-route-casing {
+  stroke: var(--route-casing);
+}
+.unihop-route {
+  stroke: var(--accent);
+}
+
+.unihop-hub-pin,
+.unihop-selected-pin,
+.unihop-car {
+  background: none;
+  border: 0;
+}
+
+/* Small navy hub pin. */
+.unihop-hub-pin svg {
+  display: block;
+  filter: drop-shadow(0 1px 2px rgba(14, 17, 22, 0.3));
+}
+
+/* Selected pickup/dropoff: the logo icon in a light container with a pointer. */
+.unihop-selected-pin .pin {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--knob);
+  box-shadow: 0 4px 12px rgba(14, 17, 22, 0.25);
+}
+.unihop-selected-pin .pin img {
+  display: block;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+.unihop-selected-pin .pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background: var(--knob);
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 2px;
+  z-index: -1;
+}
+/* Finding-driver pulse: accent ring around the pickup pin (DESIGN.md section 7). */
+.unihop-selected-pin.is-pulsing .pin::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 18px;
+  border: 3px solid var(--accent);
+  animation: pin-pulse 1.6s var(--ease-out-ui) infinite;
+}
+@keyframes pin-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  80%,
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+/* Live car: accent disc with a heading arrow; the inner element rotates. */
+.unihop-car .car {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background: var(--accent);
+  border: 3px solid var(--route-casing);
+  box-shadow: 0 2px 8px rgba(14, 17, 22, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--on-accent);
+  transition: transform 0.4s var(--ease-out-ui);
+}
+
+/* Map attribution blends into the theme. */
+.leaflet-control-attribution {
+  background: color-mix(in srgb, var(--surface-raised) 80%, transparent) !important;
+  color: var(--ink-muted) !important;
+  font-size: 10px;
+}
+.leaflet-control-attribution a {
+  color: var(--brand) !important;
 }

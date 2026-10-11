@@ -1,15 +1,13 @@
 "use client";
 
-import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { homeFor } from "@/components/app/SessionProvider";
-import { Logo } from "@/components/app/Logo";
+import { Logo } from "@/components/brand/Logo";
 import { api, getToken } from "@/lib/api";
-import { springState } from "@/lib/motion";
 
-/** Splash: route signed-in users to their mode's home, everyone else to login. */
-export default function Splash() {
+/** Entry: route signed-in users to their mode's home, everyone else to login. Looks like the splash. */
+export default function Entry() {
   const router = useRouter();
 
   useEffect(() => {
@@ -24,11 +22,8 @@ export default function Splash() {
   }, [router]);
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-3">
-      <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={springState}>
-        <Logo size="lg" />
-      </motion.div>
-      <p className="text-label font-normal text-ink-muted">Every ride under $10. Students only.</p>
+    <main className="flex flex-1 items-center justify-center bg-brand-logo">
+      <Logo variant="mark" onBrand size={112} priority />
     </main>
   );
 }

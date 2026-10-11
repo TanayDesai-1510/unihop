@@ -2,15 +2,17 @@ import type { ReactNode } from "react";
 import type { CardBrand, PaymentMethodType } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
-export type BadgeTone = "neutral" | "brand" | "success" | "warning" | "danger" | "inverse";
+export type BadgeTone = "neutral" | "brand" | "accent" | "success" | "warning" | "danger" | "inverse";
 
 const TONES: Record<BadgeTone, string> = {
   neutral: "bg-surface text-ink",
-  brand: "bg-brand-soft text-ink",
-  success: "bg-success text-on-brand",
-  warning: "bg-warning text-on-brand",
+  brand: "bg-brand-soft text-brand-strong",
+  accent: "bg-accent-soft text-ink",
+  // Outlined: green/yellow fills can't carry 12px text at AA in both modes; ink on bg can.
+  success: "border border-success text-ink",
+  warning: "border border-warning text-ink",
   danger: "border border-danger text-danger",
-  inverse: "bg-ink text-on-ink",
+  inverse: "bg-brand text-on-brand",
 };
 
 /** Small rounded label (caption). */

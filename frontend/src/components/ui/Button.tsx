@@ -7,13 +7,13 @@ import { springPress } from "@/lib/motion";
 import { Spinner } from "./Spinner";
 import { useToast } from "./Toast";
 
-export type ButtonVariant = "primary" | "brand" | "secondary" | "ghost" | "danger-outline";
+export type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "danger-outline";
 export type ButtonSize = "lg" | "md";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-ink text-on-ink",
-  // Only for "Request UniHop" and "Accept" (DESIGN.md section 6).
-  brand: "bg-brand text-on-brand",
+  primary: "bg-brand text-on-brand active:bg-brand-strong",
+  // UniHop orange: only the one hero CTA per screen ("Request UniHop", "Accept"). DESIGN.md section 6.
+  accent: "bg-accent text-on-accent",
   secondary: "bg-surface text-ink",
   ghost: "bg-transparent text-ink",
   "danger-outline": "bg-transparent text-danger border-2 border-danger",
@@ -83,7 +83,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cn(
         "relative inline-flex select-none items-center justify-center gap-2 rounded-button",
         "transition-[opacity,background-color] duration-150 ease-ui",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
         VARIANTS[variant],
         SIZES[size],
         block && "w-full",

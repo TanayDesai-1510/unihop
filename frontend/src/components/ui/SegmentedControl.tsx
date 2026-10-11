@@ -9,6 +9,8 @@ export interface SegmentOption<T extends string> {
   value: T;
   label: string;
   icon?: ReactNode;
+  /** Accessible name when the visible label is empty (icon-only segments). */
+  ariaLabel?: string;
 }
 
 export interface SegmentedControlProps<T extends string> {
@@ -50,7 +52,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, p
               }}
               type="button"
               role="radio"
-              aria-label={o.label}
+              aria-label={o.ariaLabel ?? o.label}
               aria-checked={selected}
               tabIndex={selected ? 0 : -1}
               onClick={() => !selected && onChange(o.value)}
@@ -58,7 +60,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, p
               className={cn(
                 "relative z-0 flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-3 text-label font-semibold",
                 "transition-colors duration-150 ease-ui",
-                selected ? "text-on-ink" : "text-ink-muted",
+                selected ? "text-on-brand" : "text-ink-muted",
                 pending && "opacity-60",
               )}
             >
@@ -67,11 +69,11 @@ export function SegmentedControl<T extends string>({ options, value, onChange, p
                   layoutId="thumb"
                   aria-hidden
                   transition={reduce ? fadeUI : springUI}
-                  className="absolute inset-0 -z-10 rounded-full bg-ink"
+                  className="absolute inset-0 -z-10 rounded-full bg-brand"
                 />
               )}
               {o.icon}
-              <span className="truncate">{o.label}</span>
+              {o.label && <span className="truncate">{o.label}</span>}
             </button>
           );
         })}
