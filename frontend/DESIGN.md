@@ -18,7 +18,7 @@ The UniHop logo is a white location pin wearing a graduation cap, with a winding
 - Source file: `public/brand/logo-source.png`. Derived assets live in `public/brand/` (see the setup prompt).
 - App icon / favicon / PWA icons: the full navy rounded-square version.
 - In-app mark (top bar, login, splash, receipt): the pin mark on a transparent background, or the full icon at small sizes. Never stretch, recolor, rotate, add effects, or place the navy icon on a navy surface without a white or light container.
-- Wordmark: "UniHop" set in Geist 700, "Uni" in `--brand`, "Hop" in `--accent`. In dark mode "Uni" uses `--ink`.
+- Wordmark: "UniHop" set in Bricolage Grotesque 800 with tight tracking, "Uni" in `--brand`, "Hop" in `--accent`. In dark mode "Uni" uses `--ink`.
 - Minimum clear space around the mark: 25% of its width.
 
 ### Colors (taken from the logo)
@@ -52,18 +52,39 @@ Rules:
 - Never use default Tailwind palette colors directly; always tokens.
 
 ## 3. Typography
-Font: **Geist** (already bundled with Next.js), fallback `system-ui, sans-serif`. Use `font-variant-numeric: tabular-nums` for every price, ETA, timer, and earnings figure.
+Three fonts, each with one job. Load all through `next/font/google` (self-hosted, no layout shift).
 
-| Style | Size / line height | Weight | Use |
-|---|---|---|---|
-| Display | 40 / 44 | 700 | Fare on receipt, earnings total |
-| Title | 24 / 30 | 700 | Screen titles, sheet headers |
-| Headline | 18 / 24 | 600 | Card titles, driver name |
-| Body | 16 / 24 | 400 | Default text |
-| Label | 14 / 20 | 500 | Form labels, list secondary text |
-| Caption | 12 / 16 | 500 | Metadata, timestamps, badges |
+- **Display: Bricolage Grotesque** (700 and 800, use the optical-size axis). Characterful, confident, a bit playful: screen titles, hero headlines, fares, ETAs, earnings, the wordmark. Tight tracking (-0.02em to -0.04em at large sizes).
+- **Text: Instrument Sans** (400, 500, 600). Clean and modern: body, labels, buttons, lists, inputs.
+- **Mono: Geist Mono** (500, 600). Only for the license plate, the ride PIN, card numbers, and timers.
 
-Minimum body size is 16px (prevents iOS zoom on inputs).
+| Style | Font | Size / line height | Weight | Use |
+|---|---|---|---|---|
+| Hero | Display | 48 / 48 | 800 | Login headline, receipt fare, earnings balance |
+| Display | Display | 36 / 40 | 800 | Fare on request sheet, ETA |
+| Title | Display | 26 / 30 | 700 | Screen titles, sheet headers |
+| Headline | Text | 18 / 24 | 600 | Card titles, driver name |
+| Body | Text | 16 / 24 | 400 | Default text |
+| Label | Text | 14 / 20 | 500 | Form labels, secondary text |
+| Caption | Text | 12 / 16 | 600 | Metadata, badges, uppercase eyebrows (+0.08em tracking) |
+| Mono | Mono | 16 to 28 | 600 | Plate, PIN, card number |
+
+- All numbers use `font-variant-numeric: tabular-nums`. Big money figures put the `$` and cents at about 55% size, top-aligned (like a price tag).
+- Headlines may highlight one key phrase in `--accent` (e.g. "Every ride under **$10**."). One highlight per screen, max.
+- Minimum input text size is 16px (prevents iOS zoom).
+
+## 3b. Visual language (what makes it UniHop, not a template)
+The logo's **road** is the signature motif. Use it with intent, not everywhere.
+
+- **The lane line**: a dashed white or `--line` stroke (rounded dashes, like the logo road) used for the ride progress timeline, the pickup-to-dropoff connector, and section dividers on key screens. The ride timeline is a road: a small car glides along it as status advances.
+- **Navy hero surfaces**: login, splash, driver offer, and receipt top halves use full-bleed `--brand` with white type and a soft radial orange glow in one corner (very subtle, 10 to 15% opacity). Everything else stays light and calm.
+- **Glass sheets over the map**: bottom sheets over the map use `--surface-raised` at 92% with `backdrop-filter: blur(20px) saturate(1.4)` and a hairline top border.
+- **The ticket**: fare quotes and receipts are a ticket card with perforated notches on both sides and a dashed tear line between route and price.
+- **License plate**: drivers' plates render as a real plate (white, navy border, Mono 600, slight inner shadow).
+- **The hop**: UniHop's micro-signature is a small bounce. The accent CTA does a tiny hop (translateY -2px spring) when it becomes enabled; the success check hops once; loading uses three dots hopping in sequence instead of a spinner where space allows.
+- **Depth**: layered, soft shadows (two layers: tight + wide) on floating elements; never harsh gray drop shadows.
+- **Illustrated empty states**: simple line illustrations built from the road motif (a winding dashed road with a pin), drawn in SVG with tokens.
+- **Generous scale contrast**: huge numbers next to small labels. Hierarchy comes from size and weight, not from boxes and borders.
 
 ## 4. Spacing, radius, elevation
 - Spacing scale (px): 4, 8, 12, 16, 20, 24, 32, 40. Screen side padding is 20.
@@ -80,7 +101,7 @@ Minimum body size is 16px (prevents iOS zoom on inputs).
 ## 6. Components
 Build these once in `src/components/ui/` and reuse everywhere.
 
-- **Button**: height 52, full width by default, radius 14, Headline-weight text. Variants: primary (brand navy fill), accent (orange fill, only the one hero CTA per screen like "Request UniHop" and "Accept"), secondary (surface fill), ghost (text only), danger-outline. Loading state shows a spinner and keeps width fixed. Pressed state scales to 0.98.
+- **Button**: height 52, full width by default, radius 14, Headline-weight text. Variants: primary (brand navy fill), accent (orange fill, only the one hero CTA per screen like "Request UniHop" and "Accept"), secondary (surface fill), ghost (text only), danger-outline. Loading state shows a spinner and keeps width fixed. Pressed state scales to 0.97 (see section 7).
 - **Input**: height 52, surface fill, no border until focus (2px brand ring), label above, error text below in danger.
 - **Card**: surface-raised, radius 16, padding 16.
 - **ListRow**: 56 to 64 tall, leading icon or avatar, title + secondary text, trailing value or chevron. Used for hubs, payment methods, rides.
@@ -89,17 +110,34 @@ Build these once in `src/components/ui/` and reuse everywhere.
 - **Badge** for card brands: text-based (VISA, MC, AMEX, DISC) in a small rounded rectangle, not logo artwork.
 - **Toast**: top of screen, auto-dismiss 3s, for success and non-blocking errors.
 - **Skeleton** loaders matching the real layout shape, never a centered spinner on a blank page.
-- Icons: `lucide-react`, 20 or 24px, stroke 2. No emoji as icons.
+- Icons: `lucide-react`, 20 or 24px, stroke 1.75 to 2, rounded caps. No emoji as icons.
 
 ## 7. Motion
-Use `motion` (Framer Motion) for sheets and state transitions; CSS for small things.
-- Durations: 150ms (press, toggles), 250ms (sheets, cards in/out), 400ms (major state changes). Easing: `cubic-bezier(0.2, 0.8, 0.2, 1)`.
+Use `motion` (Framer Motion) for sheets and state transitions; CSS for small things. The system lives in `src/lib/motion.ts`.
+
+**Springs, not tweens, for anything that moves.** Three named springs cover the app. Springs start from the current on-screen value and carry velocity, so every animation can be grabbed and redirected mid-flight.
+
+| Spring | Stiffness / damping | Use |
+|---|---|---|
+| `springSnappy` | 500 / 35 | Presses, toggles, small controls, chips |
+| `springSmooth` | 260 / 30 | Sheets, cards, ride-state changes, number ticks, shared-element morphs |
+| `springHop` | 600 / 14 | The hop: accent CTA becoming enabled, success check, hop dots |
+
+- **Press**: every pressable scales to 0.97 while held (`PRESS_SCALE`), on pointer-down, snappy spring back.
+- **Bottom sheet (iOS detents)**: peek, half, full. 1:1 drag, velocity-based snapping (momentum projected with Apple's deceleration formula, release velocity handed to the spring), rubber-banding past the edges, interruptible mid-animation. The map dims slightly (18%) only at the full detent. Content scrolls only at full.
+- **Shared elements** (`layoutId`): the ride option row morphs into the confirm card; the driver card carries from offer to active ride; the fare ticket carries from request to receipt.
+- **Ride states** swap inside the same sheet with `AnimatePresence mode="popLayout"` (cross-fade + 16px slide, `stateSwap`), and the sheet content height animates with `layout`.
+- **Numbers tick**: fares and ETAs animate to new values (smooth spring); earnings count up on first view. Written straight from motion values, never re-rendering React per frame.
+- **Large titles** on list screens collapse into a compact blurred top bar on scroll (opacity + transform from scroll position).
+- **Haptics** (`navigator.vibrate`, same frame as the visual): offer arrives, ride accepted / offer accepted, driver arrived, payment success, decline (short double pulse). Nothing else vibrates.
+- **Only transform and opacity animate.** Never width, height, top, left, or colors on large surfaces.
+- Tween durations for opacity/color only: 150ms (press, toggles), 250ms (sheets, cards in/out), 400ms (major state changes). Easing: `cubic-bezier(0.2, 0.8, 0.2, 1)`.
 - Ride states cross-fade and slide within the same sheet rather than jumping to a new page.
 - Finding driver: pulsing accent ring around the logo-shaped pickup pin.
 - Driver offer: circular countdown ring (15s) in accent, turning danger in the last 5s.
 - Live car marker glides between location updates (interpolate, don't teleport) and rotates to heading.
 - Card decline: input row shakes once (200ms) plus the error message.
-- Respect `prefers-reduced-motion`: replace movement with fades.
+- Respect `prefers-reduced-motion`: replace movement with fades (`MotionConfig reducedMotion="user"` app-wide, plus `fadeUI` where a component picks its own fallback). Loops (pulse, hop dots) become gentle opacity changes.
 
 ## 8. Key screens
 - **Splash**: logo icon centered on `--brand`, scales in with a soft spring, road lane draws in, then fades to login or home (under 1.2s total, skipped on repeat visits).

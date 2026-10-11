@@ -24,8 +24,10 @@
   --on-accent: #ffffff;
 
   /* Elevation (DESIGN.md section 4). Dark mode swaps shadows for borders. */
-  --shadow-sheet: 0 -8px 30px rgba(14, 17, 22, 0.12);
-  --shadow-float: 0 4px 16px rgba(14, 17, 22, 0.08);
+  /* Depth (DESIGN.md 3b): layered soft shadows, tight + wide, never one harsh drop. */
+  --shadow-sheet: 0 -1px 2px rgba(14, 17, 22, 0.04), 0 -8px 30px rgba(14, 17, 22, 0.12);
+  --shadow-float: 0 1px 2px rgba(14, 17, 22, 0.06), 0 6px 20px rgba(14, 17, 22, 0.08);
+  --shadow-lift: 0 2px 4px rgba(14, 17, 22, 0.1), 0 12px 28px rgba(14, 17, 22, 0.16);
   --border-elevated: transparent;
   /* Backdrop behind full-height sheets (navy-black); opacity set by the component. */
   --scrim: #0a1222;
@@ -67,6 +69,7 @@
 
     --shadow-sheet: none;
     --shadow-float: none;
+    --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.35);
     --border-elevated: var(--line);
 
     color-scheme: dark;
@@ -94,6 +97,7 @@
 
   --shadow-sheet: none;
   --shadow-float: none;
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.35);
   --border-elevated: var(--line);
 
   color-scheme: dark;
@@ -134,21 +138,14 @@
   --color-brand-logo: var(--brand-logo);
   --color-route-casing: var(--route-casing);
 
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* DESIGN.md section 3: Bricolage Grotesque (display), Instrument Sans (text), Geist Mono. */
+  --font-sans: var(--font-text-face), system-ui, sans-serif;
+  --font-display: var(--font-display-face), var(--font-text-face), system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
 
-  /* Type scale (DESIGN.md section 3). Tracking tightens as size grows. */
-  --text-display: 40px;
-  --text-display--line-height: 44px;
-  --text-display--letter-spacing: -0.02em;
-  --text-display--font-weight: 700;
-  --text-title: 24px;
-  --text-title--line-height: 30px;
-  --text-title--letter-spacing: -0.01em;
-  --text-title--font-weight: 700;
+  /* Text styles (Instrument Sans). Hero / Display / Title are @utility below (display face). */
   --text-headline: 18px;
   --text-headline--line-height: 24px;
-  --text-headline--letter-spacing: -0.005em;
   --text-headline--font-weight: 600;
   --text-body: 16px;
   --text-body--line-height: 24px;
@@ -157,8 +154,7 @@
   --text-label--font-weight: 500;
   --text-caption: 12px;
   --text-caption--line-height: 16px;
-  --text-caption--letter-spacing: 0.01em;
-  --text-caption--font-weight: 500;
+  --text-caption--font-weight: 600;
 
   /* Radius (DESIGN.md section 4). */
   --radius-chip: 12px;
@@ -169,6 +165,7 @@
 
   --shadow-sheet: var(--shadow-sheet);
   --shadow-float: var(--shadow-float);
+  --shadow-lift: var(--shadow-lift);
   --shadow-knob: var(--shadow-knob);
 
   --ease-ui: var(--ease-out-ui);
@@ -183,7 +180,7 @@ html {
 body {
   background: var(--surface);
   color: var(--ink);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-text-face), system-ui, sans-serif;
   font-size: 16px;
   line-height: 24px;
   overscroll-behavior-y: none;
@@ -192,6 +189,66 @@ body {
 /* Every price, ETA, timer and earnings figure. */
 .tnum {
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Type scale (DESIGN.md section 3) ---------- */
+/* Display face with optical sizing; tracking tightens as size grows. Numbers are tabular. */
+@utility text-hero {
+  font-family: var(--font-display);
+  font-size: 48px;
+  line-height: 48px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-optical-sizing: auto;
+  font-variant-numeric: tabular-nums;
+}
+@utility text-display {
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  font-optical-sizing: auto;
+  font-variant-numeric: tabular-nums;
+}
+@utility text-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-optical-sizing: auto;
+}
+/* Uppercase eyebrow: Caption + 0.08em tracking. */
+@utility eyebrow {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Plates, PIN, card numbers, timers. */
+@utility font-mono-num {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Price tag: "$" and cents at ~55% size, top-aligned (components/brand/Price.tsx). */
+.price {
+  display: inline-flex;
+  align-items: flex-start;
+  font-variant-numeric: tabular-nums;
+}
+.price .price-minor {
+  font-size: 0.55em;
+  line-height: 1;
+  margin-top: 0.12em;
+  letter-spacing: -0.01em;
+}
+.price .price-symbol {
+  margin-right: 0.04em;
 }
 
 :focus-visible {
@@ -247,7 +304,7 @@ body {
    these classes give them token colors so light and dark both follow DESIGN.md section 2. ---------- */
 .leaflet-container {
   background: var(--surface);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-text-face), system-ui, sans-serif;
 }
 
 /* Route drawn like the logo's road: orange lane over a thin white casing. */
@@ -343,4 +400,126 @@ body {
 }
 .leaflet-control-attribution a {
   color: var(--brand) !important;
+}
+
+
+/* ---------- Brand surfaces (components/brand) ---------- */
+
+/* Ticket: two halves, each masked with half-circle notches at the tear line. */
+.ticket {
+  --notch: 11px;
+  filter: drop-shadow(0 1px 1px rgba(14, 17, 22, 0.06)) drop-shadow(0 8px 18px rgba(14, 17, 22, 0.08));
+}
+.ticket-half {
+  background: var(--surface-raised);
+}
+.ticket-top {
+  border-radius: 16px 16px 0 0;
+  mask: radial-gradient(circle var(--notch) at 0 100%, transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% 100%, transparent 98%, #000) right / 51% 100% no-repeat;
+}
+.ticket-bottom {
+  border-radius: 0 0 16px 16px;
+  mask: radial-gradient(circle var(--notch) at 0 0, transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% 0, transparent 98%, #000) right / 51% 100% no-repeat;
+}
+.ticket-tear {
+  height: 2px;
+  margin: 0 calc(var(--notch) + 6px);
+  background: radial-gradient(circle, var(--line) 1.2px, transparent 1.3px) 0 0 / 8px 2px repeat-x;
+  position: relative;
+}
+.ticket-tear::before {
+  /* fills the strip between halves so the tear line sits on the ticket, not on the page */
+  content: "";
+  position: absolute;
+  inset: 0 calc(-1 * (var(--notch) + 6px));
+  background: var(--surface-raised);
+  z-index: -1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ticket {
+    filter: none;
+  }
+}
+:root[data-theme="dark"] .ticket {
+  filter: none;
+}
+
+/* Navy hero surface with a soft orange glow (~12%) in one corner. */
+.hero-surface {
+  background:
+    radial-gradient(120% 70% at 105% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%),
+    var(--brand-logo);
+}
+.hero-surface.hero-glow-bl {
+  background:
+    radial-gradient(110% 70% at -10% 110%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 55%),
+    var(--brand-logo);
+}
+
+/* Glass sheet over the map: surface-raised at 92%, blur 20, saturate 1.4, hairline top. */
+.glass-sheet {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+  border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent) !important;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-sheet {
+    background: var(--surface-raised) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Compact top bar behind collapsed large titles (and other floating chrome). */
+.glass-bar {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-bar {
+    background: var(--bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Small floating glass chip over the map (top bar logo, mode toggle). */
+.glass-chip {
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: var(--shadow-float);
+  border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-chip {
+    background: var(--surface-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Ride map: keep Leaflet's top controls (attribution) below the floating top bar. */
+.ride-map .leaflet-top {
+  top: calc(env(safe-area-inset-top) + 66px);
+}
+
+
+/* Lite glass on low-end devices (set before first paint in Splash's boot script): same look at
+   rest, minus the per-frame backdrop blur that costs frames during sheet and camera motion. */
+:root[data-lite-glass] .glass-sheet {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--surface-raised) 98%, transparent) !important;
+}
+:root[data-lite-glass] .glass-bar,
+:root[data-lite-glass] .glass-chip {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--surface-raised);
 }

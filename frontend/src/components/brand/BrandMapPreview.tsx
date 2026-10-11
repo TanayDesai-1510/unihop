@@ -4,7 +4,7 @@
 import L from "leaflet";
 import { useEffect, useRef } from "react";
 import { HUBS } from "@/mocks/data";
-import { addRoute, carIcon, hubIcon, prefersDark, selectedIcon, TILES } from "./map";
+import { addRoute, carIcon, hubIcon, prefersDark, selectedIcon, TILES, tileOptions } from "./map";
 
 /** Demo route from The Yard toward Cook Campus Center (illustrative waypoints, not turn-by-turn). */
 const ROUTE: L.LatLngExpression[] = [
@@ -26,7 +26,7 @@ export default function BrandMapPreview() {
     if (!ref.current) return;
     const map = L.map(ref.current, { zoomControl: false, attributionControl: true }).setView([40.4925, -74.4425], 14);
     map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
-    let tiles = L.tileLayer(prefersDark() ? TILES.dark : TILES.light, { attribution: TILES.attribution, maxZoom: TILES.maxZoom }).addTo(map);
+    let tiles = L.tileLayer(prefersDark() ? TILES.dark : TILES.light, tileOptions).addTo(map);
 
     const pickup = HUBS.find((h) => h.code === "YARD")!;
     const dropoff = HUBS.find((h) => h.code === "COOK_CC")!;
@@ -43,7 +43,7 @@ export default function BrandMapPreview() {
     // Follow the /dev/components theme switch and OS changes.
     const swap = () => {
       map.removeLayer(tiles);
-      tiles = L.tileLayer(prefersDark() ? TILES.dark : TILES.light, { attribution: TILES.attribution, maxZoom: TILES.maxZoom }).addTo(map);
+      tiles = L.tileLayer(prefersDark() ? TILES.dark : TILES.light, tileOptions).addTo(map);
       tiles.bringToBack();
     };
     const mq = window.matchMedia("(prefers-color-scheme: dark)");

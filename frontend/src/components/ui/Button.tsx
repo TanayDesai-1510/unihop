@@ -3,7 +3,7 @@
 import { motion, type HTMLMotionProps } from "motion/react";
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { springPress } from "@/lib/motion";
+import { PRESS_SCALE, springSnappy } from "@/lib/motion";
 import { Spinner } from "./Spinner";
 import { useToast } from "./Toast";
 
@@ -69,8 +69,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled}
       aria-disabled={inert || undefined}
       aria-busy={loading || undefined}
-      whileTap={inert ? undefined : { scale: 0.98 }}
-      transition={springPress}
+      whileTap={inert ? undefined : { scale: PRESS_SCALE }}
+      transition={springSnappy}
       onClick={(e) => {
         if (loading) return;
         if (softDisabled) {

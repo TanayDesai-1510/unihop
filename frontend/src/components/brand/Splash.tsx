@@ -11,7 +11,11 @@ export const SPLASH_KEY = "unihop.splash.v1";
  * Runs in <head> before first paint: marks the document when this session already saw the splash,
  * so CSS hides it instantly and repeat visits never flash navy.
  */
-export const splashBootScript = `try{if(sessionStorage.getItem("${SPLASH_KEY}"))document.documentElement.dataset.splash="done"}catch(e){document.documentElement.dataset.splash="done"}`;
+export const splashBootScript =
+  `try{if(sessionStorage.getItem("${SPLASH_KEY}"))document.documentElement.dataset.splash="done"}catch(e){document.documentElement.dataset.splash="done"}` +
+  // Low-end devices get "lite glass" (solid fill, no backdrop blur): measured as the main cost of
+  // sheet and camera transitions when rasterized without a fast GPU (see scripts/perf-trace.ts).
+  `;try{var n=navigator;if((n.hardwareConcurrency||8)<=4||(n.deviceMemory||8)<=3)document.documentElement.dataset.liteGlass=""}catch(e){}`;
 
 const HOLD_MS = 620; // scale-in settles, then fade (fade 0.38s): ~1.0s total, under DESIGN.md's 1.2s
 
@@ -53,13 +57,23 @@ export function SplashOverlay({ show, contained = false }: { show: boolean; cont
           transition={{ duration: 0.38, ease: EASE_UI }}
           className={`unihop-splash ${contained ? "absolute" : "fixed"} inset-0 z-[100] flex items-center justify-center bg-brand-logo`}
         >
-          <motion.div
-            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.82 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={reduce ? { duration: 0.2 } : { type: "spring", bounce: 0.25, visualDuration: 0.45 }}
-          >
-            <Logo variant="mark" onBrand size={112} priority />
-          </motion.div>
+          <div className="flex flex-col items-center gap-4">
+            <motion.div
+              initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.82 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={reduce ? { duration: 0.2 } : { type: "spring", bounce: 0.25, visualDuration: 0.45 }}
+            >
+              <Logo variant="mark" onBrand size={112} priority />
+            </motion.div>
+            {/* The road lane draws in under the mark (scaleX, compositor-only). */}
+            <motion.span
+              aria-hidden
+              initial={{ scaleX: 0, opacity: 0 }}
+              animate={{ scaleX: 1, opacity: 1 }}
+              transition={reduce ? { duration: 0.2 } : { duration: 0.45, delay: 0.12, ease: [0.2, 0.8, 0.2, 1] }}
+              className="h-1 w-20 origin-left bg-[radial-gradient(circle,var(--accent)_2px,transparent_2.1px)] bg-[length:10px_4px] bg-repeat-x"
+            />
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

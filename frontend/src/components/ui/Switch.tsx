@@ -35,7 +35,7 @@ export function Switch({ checked, onChange, disabled, tone = "brand", id, ...ari
       }}
       className={cn(
         "relative inline-flex h-[31px] w-[51px] shrink-0 items-center rounded-full p-0.5",
-        "transition-colors duration-150 ease-ui",
+        "transition-[background-color,transform] duration-150 ease-ui active:scale-[0.97]",
         "after:absolute after:-inset-1.5 after:content-['']",
         checked ? ON[tone] : "bg-line",
         disabled && "opacity-40",

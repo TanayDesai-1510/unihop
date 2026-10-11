@@ -17,6 +17,8 @@ export interface BottomSheetProps {
   /** Controlled snap index. */
   snap?: number;
   onSnapChange?: (index: number) => void;
+  /** Visible height (px) of the detent the sheet is heading to. For camera padding behind it. */
+  onHeightChange?: (px: number) => void;
   /** Allow dragging below the lowest snap to close. */
   dismissible?: boolean;
   onDismiss?: () => void;
@@ -38,6 +40,7 @@ export function BottomSheet({
   defaultSnap = 0,
   snap,
   onSnapChange,
+  onHeightChange,
   dismissible = false,
   onDismiss,
   header,
@@ -46,6 +49,13 @@ export function BottomSheet({
   ...aria
 }: BottomSheetProps) {
   const frameRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLElement>(null);
+  /** Marks the sheet as moving (drag or settle) so expensive materials (backdrop blur) can pause. */
+  const setMoving = useCallback((moving: boolean) => {
+    if (!sheetRef.current) return;
+    if (moving) sheetRef.current.dataset.moving = "";
+    else delete sheetRef.current.dataset.moving;
+  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
   const controls = useDragControls();
   const reduce = useReducedMotion();
@@ -62,7 +72,7 @@ export function BottomSheet({
 
   // Backdrop fades in only across the last stretch, between the second-highest snap and full.
   const backdropFrom = snapPoints.length > 1 ? maxH - heights[topIndex - 1] : 1;
-  const backdropOpacity = useTransform(y, [0, Math.max(backdropFrom, 1)], [0.32, 0], { clamp: true });
+  const backdropOpacity = useTransform(y, [0, Math.max(backdropFrom, 1)], [0.18, 0], { clamp: true });
 
   // Measure the container (the sheet's frame fills it).
   useLayoutEffect(() => {
@@ -75,6 +85,19 @@ export function BottomSheet({
     return () => ro.disconnect();
   }, []);
 
+  // Report the visible height of the detent we're heading to (map camera padding).
+  const reportedH = useRef(-1);
+  const report = useCallback(
+    (i: number) => {
+      const h = Math.round(heights[Math.max(0, Math.min(heights.length - 1, i))] ?? 0);
+      if (h && h !== reportedH.current) {
+        reportedH.current = h;
+        onHeightChange?.(h);
+      }
+    },
+    [heights, onHeightChange],
+  );
+
   // Place the sheet at its snap without animating on first measure / resize.
   const placed = useRef(false);
   useLayoutEffect(() => {
@@ -82,15 +105,50 @@ export function BottomSheet({
     if (!placed.current) {
       y.set(yFor(index));
       placed.current = true;
+      report(index);
     }
-  }, [containerH, index, y, yFor]);
+  }, [containerH, index, y, yFor, report]);
+
+  // A state swapped the detents (ride flow): keep the sheet's on-screen edge where it is this
+  // frame (no jump), then spring to the matching detent in the new set.
+  const snapKey = snapPoints.join("|");
+  // New detent set: clamp the index during render (no effect setState).
+  const [renderedKey, setRenderedKey] = useState(snapKey);
+  if (renderedKey !== snapKey) {
+    setRenderedKey(snapKey);
+    const clamped = Math.max(0, Math.min(snapPoints.length - 1, snap ?? index));
+    if (clamped !== index) setIndex(clamped);
+  }
+  const prevKey = useRef(snapKey);
+  const prevMaxH = useRef(maxH);
+  useLayoutEffect(() => {
+    if (!placed.current || !containerH) {
+      prevKey.current = snapKey;
+      prevMaxH.current = maxH;
+      return;
+    }
+    if (prevKey.current === snapKey && prevMaxH.current === maxH) return;
+    const keyChanged = prevKey.current !== snapKey;
+    y.set(y.get() + (maxH - prevMaxH.current));
+    prevKey.current = snapKey;
+    prevMaxH.current = maxH;
+    if (!keyChanged) return;
+    const next = Math.max(0, Math.min(snapPoints.length - 1, index));
+    setMoving(true);
+    animate(y, maxH - heights[next], reduce ? { ...fadeUI, duration: 0.15 } : springSheet).then(() => setMoving(false));
+    report(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapKey, maxH, containerH]);
 
   const settle = useCallback(
     (target: number, velocity = 0, onDone?: () => void) => {
-      animate(y, target, reduce ? { ...fadeUI, duration: 0.15 } : { ...springSheet, velocity, onComplete: onDone });
-      if (reduce) onDone?.();
+      setMoving(true);
+      animate(y, target, reduce ? { ...fadeUI, duration: 0.15 } : { ...springSheet, velocity }).then(() => {
+        setMoving(false);
+        onDone?.();
+      });
     },
-    [y, reduce],
+    [y, reduce, setMoving],
   );
 
   const goTo = useCallback(
@@ -99,9 +157,10 @@ export function BottomSheet({
       if (next !== index) haptic("tick");
       setIndex(next);
       onSnapChange?.(next);
+      report(next);
       settle(yFor(next), velocity);
     },
-    [index, onSnapChange, settle, topIndex, yFor],
+    [index, onSnapChange, settle, topIndex, yFor, report],
   );
 
   // Controlled mode: adopt a new `snap` prop during render, then animate to it.
@@ -113,6 +172,7 @@ export function BottomSheet({
   useEffect(() => {
     if (snap === undefined || !placed.current) return;
     settle(yFor(snap));
+    report(snap);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snap]);
 
@@ -164,6 +224,7 @@ export function BottomSheet({
         />
       )}
       <motion.section
+        ref={sheetRef}
         role="region"
         aria-label={aria["aria-label"]}
         drag="y"
@@ -172,6 +233,7 @@ export function BottomSheet({
         dragMomentum={false}
         dragConstraints={{ top: 0, bottom: dismissible ? maxH : lowestY }}
         dragElastic={{ top: TOP_RUBBER_BAND, bottom: dismissible ? 0 : TOP_RUBBER_BAND }}
+        onDragStart={() => setMoving(true)}
         onDragEnd={onDragEnd}
         onKeyDown={(e) => {
           if (e.key === "Escape" && atTop && topIndex > 0) goTo(topIndex - 1);
@@ -205,6 +267,15 @@ export function BottomSheet({
         >
           {children}
         </div>
+        {/* Below full, content dissolves at the bottom edge instead of being sliced. An overlay that
+            fades (opacity only), not a mask, so reaching full never forces a re-raster. */}
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface-raised to-transparent transition-opacity duration-200",
+            atTop ? "opacity-0" : "opacity-100",
+          )}
+        />
       </motion.section>
     </div>
   );

@@ -7,9 +7,9 @@ import { Screen } from "@/components/app/Screen";
 import { Logo } from "@/components/brand/Logo";
 import { SplashOverlay } from "@/components/brand/Splash";
 import { LogoLockup, Wordmark } from "@/components/brand/Wordmark";
+import { HeroDemo, HopDemo, NumbersDemo, RoadKit, ScenesDemo, SharedDemo, SheetDemo, SpringsDemo, TypeSpecimen } from "./sections";
 import {
   Badge,
-  BottomSheet,
   Button,
   Card,
   EmptyState,
@@ -42,9 +42,17 @@ export default function ComponentsPage() {
       <div className="flex flex-col gap-10">
         <BackendStatus />
         <Brand />
+        <TypeSpecimen />
+        <NumbersDemo />
+        <RoadKit />
+        <HeroDemo />
+        <HopDemo />
+        <ScenesDemo />
+        <SpringsDemo />
+        <SharedDemo />
+        <SheetDemo />
         <MapStyle />
         <Tokens />
-        <Typography />
         <Buttons />
         <Inputs />
         <Cards />
@@ -55,7 +63,6 @@ export default function ComponentsPage() {
         <Toasts />
         <Skeletons />
         <States />
-        <Sheet />
       </div>
     </Screen>
   );
@@ -107,21 +114,6 @@ function Tokens() {
             <span className="text-caption text-ink-muted">--{t}</span>
           </div>
         ))}
-      </div>
-    </Section>
-  );
-}
-
-function Typography() {
-  return (
-    <Section title="Typography">
-      <div className="flex flex-col gap-2">
-        <p className="tnum text-display">$6.50</p>
-        <p className="text-title">Where to?</p>
-        <p className="text-headline">Alex Kim</p>
-        <p className="text-body">Your driver is 2 minutes away.</p>
-        <p className="text-label">Pickup</p>
-        <p className="text-caption text-ink-muted">Today, 9:41 AM</p>
       </div>
     </Section>
   );
@@ -349,39 +341,6 @@ function States() {
       <Card>
         <ErrorState message="We couldn't load your rides. Check your connection and try again." onRetry={() => {}} />
       </Card>
-    </Section>
-  );
-}
-
-function Sheet() {
-  const [snap, setSnap] = useState(1);
-  return (
-    <Section title="BottomSheet">
-      <p className="text-label font-normal text-ink-muted">Drag or flick the sheet. Snap: {["peek", "half", "full"][snap]}.</p>
-      <div
-        className="relative h-[560px] overflow-hidden rounded-card border border-line bg-surface"
-        style={{
-          backgroundImage: "linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      >
-        <BottomSheet
-          aria-label="Ride options"
-          snapPoints={[140, "55%", "100%"]}
-          defaultSnap={1}
-          onSnapChange={setSnap}
-          header={<h3 className="text-title">Where to?</h3>}
-        >
-          <div className="-mx-3 flex flex-col gap-1">
-            {["The Yard", "Busch Student Center", "Livingston Student Center", "Cook Campus Center", "Douglass Student Center", "New Brunswick Station"].map((h) => (
-              <ListRow key={h} leading={<MapPin aria-hidden size={20} strokeWidth={2} />} title={h} subtitle="Hub" chevron onClick={() => {}} />
-            ))}
-          </div>
-          <Button variant="primary" className="mt-4">
-            Confirm pickup
-          </Button>
-        </BottomSheet>
-      </div>
     </Section>
   );
 }
