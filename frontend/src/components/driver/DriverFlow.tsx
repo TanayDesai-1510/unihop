@@ -1,6 +1,8 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
+import { useCallback } from "react";
+import { ClaudeAssistant } from "@/components/assistant/ClaudeAssistant";
 import { ModeToggle } from "@/components/app/ModeToggle";
 import { useSession } from "@/components/app/SessionProvider";
 import { useHideNav } from "@/components/app/TabsChrome";
@@ -10,6 +12,7 @@ import { RideMap, type MapPhase } from "@/components/map";
 import type { SnapPoint } from "@/components/ui/BottomSheet";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { fadeUI, springSmooth, stateSwap } from "@/lib/motion";
+import type { AssistantCommand } from "@/lib/types";
 import { DriverHomePanel, NotDriverPanel, OfferPanel } from "./panels";
 import { DriverDonePanel, DriverEndedPanel, DriverPickupPanel, DriverPinPanel, DriverTripPanel, NavCard } from "./ridePanels";
 import { useDriverFlow, type DriverPhase } from "./useDriverFlow";
@@ -53,12 +56,25 @@ export function DriverFlow({ initialRideId }: { initialRideId?: string }) {
   const { user } = useSession();
   const reduce = useReducedMotion();
   const inRide = ["pickup", "arrived", "trip", "done"].includes(flow.phase);
+  const { startAssistantWatch, stopAssistantWatch } = flow;
   useHideNav(inRide);
+
+  const onAssistantCommand = useCallback(
+    async (command: AssistantCommand) => {
+      if (command.action === "WATCH_RIDES") {
+        if (!command.dropoffHubId) throw new Error("Claude returned an incomplete destination watch.");
+        await startAssistantWatch(command.dropoffHubId);
+      } else if (command.action === "STOP_WATCHING") {
+        stopAssistantWatch();
+      }
+    },
+    [startAssistantWatch, stopAssistantWatch],
+  );
 
   const ride = flow.ride;
   const navCard = !!ride && ["pickup", "arrived", "trip"].includes(flow.phase);
   const pickupId = flow.offer?.pickupHub.id ?? ride?.pickupHub.id ?? null;
-  const dropoffId = flow.offer?.dropoffHub.id ?? ride?.dropoffHub.id ?? null;
+  const dropoffId = flow.offer?.dropoffHub.id ?? ride?.dropoffHub.id ?? flow.watchedHub?.id ?? null;
   const self = flow.position;
 
   const panel = (() => {
@@ -118,20 +134,25 @@ export function DriverFlow({ initialRideId }: { initialRideId?: string }) {
             <LogoLockup size={32} />
           </div>
         )}
-        <AnimatePresence initial={false}>
-          {!inRide && !flow.profile?.isOnline && (
-            <motion.div
-              key="mode"
-              initial={{ opacity: 0, scale: 0.94 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.94 }}
-              transition={reduce ? fadeUI : springSmooth}
-              className="glass-chip pointer-events-auto w-[148px] rounded-full p-0.5"
-            >
-              <ModeToggle compact />
-            </motion.div>
+        <div className="pointer-events-none flex items-center gap-2">
+          {!inRide && flow.profile?.status === "APPROVED" && (
+            <ClaudeAssistant mode="DRIVER" onCommand={onAssistantCommand} watchingLabel={flow.watchedHub?.name} />
           )}
-        </AnimatePresence>
+          <AnimatePresence initial={false}>
+            {!inRide && !flow.profile?.isOnline && (
+              <motion.div
+                key="mode"
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.94 }}
+                transition={reduce ? fadeUI : springSmooth}
+                className="glass-chip pointer-events-auto w-[148px] rounded-full p-0.5"
+              >
+                <ModeToggle compact />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       <GlassSheet aria-label="Driver" snapPoints={DETENTS[flow.phase]} className="z-[700]">

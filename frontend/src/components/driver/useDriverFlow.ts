@@ -5,6 +5,7 @@ import { useSession } from "@/components/app/SessionProvider";
 import { useToast } from "@/components/ui/Toast";
 import { api, ApiRequestError } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
+import { readDriverWatch, removeDriverWatch, saveDriverWatch } from "@/lib/assistant";
 import type { DriverProfile, Earnings, Hub, LatLng, Ride, RideOffer, RideStatus } from "@/lib/types";
 import { isOfferRevoked } from "@/lib/types";
 import { realtime } from "@/lib/ws";
@@ -49,6 +50,20 @@ function locate(fallback: LatLng | null): Promise<LatLng> {
   });
 }
 
+function locateForAssistant(): Promise<LatLng> {
+  return new Promise((resolve, reject) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      reject(new Error("Location access is required before Claude can watch for rides."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
+      () => reject(new Error("Allow location access so Claude can put you online and watch for rides.")),
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 30_000 },
+    );
+  });
+}
+
 /** Driver-side state and actions. The UI is a pure function of this; logic lives in api/ws. */
 export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}) {
   const toast = useToast();
@@ -66,7 +81,9 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
   const [pinTries, setPinTries] = useState(0);
   const [rated, setRated] = useState(false);
   const [legStart, setLegStart] = useState<LatLng | null>(null);
+  const [watchHubId, setWatchHubId] = useState<string | null>(() => readDriverWatch());
   const lastStatus = useRef<RideStatus | null>(null);
+  const assistantHandling = useRef<string | null>(null);
   const userId = user?.id;
 
   // ---- load profile, hubs, earnings, any active ride or live offer ----
@@ -86,6 +103,8 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
     (initialRideId ? api.getRide(initialRideId) : api.getActiveRide())
       .then((r) => {
         if (cancelled || !r || r.driver?.id !== userId) return;
+        setWatchHubId(null);
+        removeDriverWatch();
         lastStatus.current = r.status;
         setRide(r);
       })
@@ -187,6 +206,34 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
   }, [online, position]);
 
   // ---- actions ----
+  const clearAssistantWatch = useCallback(() => {
+    setWatchHubId(null);
+    removeDriverWatch();
+  }, []);
+
+  const startAssistantWatch = useCallback(
+    async (dropoffHubId: string) => {
+      const destination = hubs.find((hub) => hub.id === dropoffHubId);
+      if (!destination) throw new Error("Claude selected an unknown destination.");
+      if (!profile || profile.status !== "APPROVED") throw new Error("Finish driver setup before asking Claude to find rides.");
+      if (ride) throw new Error("Finish your current ride before starting a destination watch.");
+      if (!profile.isOnline) {
+        const current = await locateForAssistant();
+        setPosition(current);
+        setProfile(await api.goOnline(current));
+      }
+      setWatchHubId(dropoffHubId);
+      saveDriverWatch(dropoffHubId);
+      toast.show({ tone: "success", message: `Claude is watching for rides to ${destination.name}.` });
+    },
+    [hubs, profile, ride, toast],
+  );
+
+  const stopAssistantWatch = useCallback(() => {
+    clearAssistantWatch();
+    toast.show({ tone: "info", message: "Claude stopped watching for destination-matched rides." });
+  }, [clearAssistantWatch, toast]);
+
   const toggleOnline = useCallback(async () => {
     if (!profile || toggling) return;
     setToggling(true);
@@ -195,6 +242,7 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
       if (profile.isOnline) {
         setProfile(await api.goOffline());
         setOffer(null);
+        clearAssistantWatch();
       } else {
         const pos = await locate(position);
         setPosition(pos);
@@ -205,7 +253,7 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
     } finally {
       setToggling(false);
     }
-  }, [profile, toggling, position, toast]);
+  }, [profile, toggling, position, toast, clearAssistantWatch]);
 
   const accept = useCallback(async () => {
     if (!offer || responding) return;
@@ -217,6 +265,7 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
       lastStatus.current = r.status;
       setRide(r);
       setOffer(null);
+      clearAssistantWatch();
     } catch (e) {
       const code = e instanceof ApiRequestError ? e.code : "";
       toast.show({ tone: "info", message: code === "OFFER_NOT_ACTIVE" ? "That offer expired. We'll send you the next one." : "Couldn't accept that trip. Try again." });
@@ -224,7 +273,7 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
     } finally {
       setResponding(null);
     }
-  }, [offer, responding, toast, position]);
+  }, [offer, responding, toast, position, clearAssistantWatch]);
 
   const decline = useCallback(async () => {
     if (!offer || responding) return;
@@ -238,6 +287,41 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
       setResponding(null);
     }
   }, [offer, responding]);
+
+  useEffect(() => {
+    if (!offer || !watchHubId || responding || ride || assistantHandling.current === offer.offerId) return;
+    assistantHandling.current = offer.offerId;
+    const matches = offer.dropoffHub.id === watchHubId;
+    setResponding(matches ? "accept" : "decline");
+    const respond = async () => {
+      try {
+        if (matches) {
+          const accepted = await api.acceptRide(offer.rideId);
+          haptic("accepted");
+          setLegStart(position);
+          lastStatus.current = accepted.status;
+          setRide(accepted);
+          setOffer(null);
+          clearAssistantWatch();
+          toast.show({ tone: "success", message: `Claude accepted a ride to ${offer.dropoffHub.name}.` });
+        } else {
+          await api.declineRide(offer.rideId);
+          setOffer(null);
+        }
+      } catch (caught) {
+        setOffer(null);
+        if (caught instanceof ApiRequestError && caught.code === "OFFER_NOT_ACTIVE") {
+          toast.show({ tone: "info", message: "That offer expired. Claude is still watching." });
+        } else {
+          toast.show({ tone: "error", message: caught instanceof ApiRequestError ? caught.message : "Claude couldn't respond to that offer." });
+        }
+      } finally {
+        assistantHandling.current = null;
+        setResponding(null);
+      }
+    };
+    void respond();
+  }, [offer, watchHubId, responding, ride, position, clearAssistantWatch, toast]);
 
   const expire = useCallback(() => {
     setOffer(null);
@@ -313,12 +397,15 @@ export function useDriverFlow({ initialRideId }: { initialRideId?: string } = {}
   else if (offer) phase = "offer";
   else phase = profile.isOnline ? "online" : "offline";
 
+  const watchedHub = hubs.find((hub) => hub.id === watchHubId) ?? null;
+
   return useMemo(
     () => ({
       phase, profile, hubs, earnings, position, toggling, offer, responding, ride, setRide, toggleOnline, accept, decline, expire, finish,
+      watchedHub, startAssistantWatch, stopAssistantWatch,
       acting, pinError, pinTries, clearPinError, rated, demoGps, markArrived, startTrip, completeTrip, cancelTrip, rate,
     }),
-    [phase, profile, hubs, earnings, position, toggling, offer, responding, ride, toggleOnline, accept, decline, expire, finish, acting, pinError, pinTries, clearPinError, rated, demoGps, markArrived, startTrip, completeTrip, cancelTrip, rate],
+    [phase, profile, hubs, earnings, position, toggling, offer, responding, ride, toggleOnline, accept, decline, expire, finish, watchedHub, startAssistantWatch, stopAssistantWatch, acting, pinError, pinTries, clearPinError, rated, demoGps, markArrived, startTrip, completeTrip, cancelTrip, rate],
   );
 }
 

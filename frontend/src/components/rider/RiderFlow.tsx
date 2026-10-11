@@ -3,6 +3,7 @@
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ModeToggle } from "@/components/app/ModeToggle";
+import { ClaudeAssistant } from "@/components/assistant/ClaudeAssistant";
 import { useHideNav } from "@/components/app/TabsChrome";
 import { GlassSheet } from "@/components/brand/GlassSheet";
 import { LogoLockup } from "@/components/brand/Wordmark";
@@ -10,6 +11,7 @@ import { RideMap, type MapPhase } from "@/components/map";
 import type { SnapPoint } from "@/components/ui/BottomSheet";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { fadeUI, springSmooth, stateSwap } from "@/lib/motion";
+import type { AssistantCommand } from "@/lib/types";
 import { ConfirmPanel, DonePanel, EndedPanel, EnRoutePanel, HomePanel, MatchingPanel, OptionsPanel, TripPanel } from "./panels";
 import { useRideFlow, type RiderPhase } from "./useRideFlow";
 
@@ -68,6 +70,11 @@ export function RiderFlow({ initialRideId }: { initialRideId?: string }) {
   const onHubTap = useCallback((id: string) => {
     if (flowRef.current.phase === "home") flowRef.current.chooseDropoff(id);
   }, []);
+  const onAssistantCommand = useCallback(async (command: AssistantCommand) => {
+    if (command.action !== "BOOK_RIDE") return;
+    if (!command.pickupHubId || !command.dropoffHubId) throw new Error("Claude returned an incomplete ride request.");
+    await flowRef.current.bookFromAssistant(command.pickupHubId, command.dropoffHubId);
+  }, []);
 
   const panel = (() => {
     switch (flow.phase) {
@@ -108,20 +115,23 @@ export function RiderFlow({ initialRideId }: { initialRideId?: string }) {
         <div className="glass-chip pointer-events-auto flex h-12 items-center rounded-full pl-2 pr-4">
           <LogoLockup size={32} />
         </div>
-        <AnimatePresence initial={false}>
-          {!inRide && (
-            <motion.div
-              key="mode"
-              initial={{ opacity: 0, scale: 0.94 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.94 }}
-              transition={reduce ? fadeUI : springSmooth}
-              className="glass-chip pointer-events-auto w-[148px] rounded-full p-0.5"
-            >
-              <ModeToggle compact />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div className="pointer-events-none flex items-center gap-2">
+          {!inRide && <ClaudeAssistant mode="RIDER" onCommand={onAssistantCommand} />}
+          <AnimatePresence initial={false}>
+            {!inRide && (
+              <motion.div
+                key="mode"
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.94 }}
+                transition={reduce ? fadeUI : springSmooth}
+                className="glass-chip pointer-events-auto w-[148px] rounded-full p-0.5"
+              >
+                <ModeToggle compact />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       <GlassSheet
