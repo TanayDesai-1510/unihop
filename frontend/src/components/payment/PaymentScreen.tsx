@@ -21,6 +21,7 @@ import { haptic } from "@/lib/haptics";
 import { pressable, springSmooth } from "@/lib/motion";
 import type { CreditTransaction, Credits, PaymentMethod, TopupAmount, WalletType } from "@/lib/types";
 import { availableWallets, WalletSheet } from "./WalletSheet";
+import { declineMessage } from "./declines";
 
 const TXN_LABEL: Record<CreditTransaction["type"], string> = {
   PROMO: "Promo credit",
@@ -244,7 +245,7 @@ function TopupSheet({ open, onClose, methods, onDone, onAddCard }: { open: boole
       onDone(c);
     } catch (e) {
       haptic("error");
-      setError(e instanceof ApiRequestError && e.code === "PAYMENT_DECLINED" ? `${e.message} Try another payment method.` : "Couldn't add funds. Try again.");
+      setError(e instanceof ApiRequestError && e.code === "PAYMENT_DECLINED" ? declineMessage(e.declineCode) : "Couldn't add funds. Try again.");
     } finally {
       setBusy(false);
     }

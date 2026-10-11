@@ -7,6 +7,7 @@ import { api, ApiRequestError } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
 import type { DeclineCode, FareBreakdown, Hub, PaymentMethod, Ride, RideStatus } from "@/lib/types";
 import { realtime } from "@/lib/ws";
+import { declineMessage } from "@/components/payment/declines";
 
 export type RiderPhase = "home" | "options" | "confirm" | "matching" | "enroute" | "trip" | "done" | "ended";
 
@@ -15,13 +16,6 @@ export interface RequestError {
   message: string;
   declineCode?: DeclineCode;
 }
-
-const DECLINE_COPY: Record<DeclineCode, string> = {
-  CARD_DECLINED: "Your card was declined. Try another payment method.",
-  INSUFFICIENT_FUNDS: "Your card has insufficient funds. Try another payment method.",
-  EXPIRED_CARD: "Your card has expired. Try another payment method.",
-  INCORRECT_CVC: "Your card's security code didn't match. Try another payment method.",
-};
 
 /**
  * Pre-request pickup estimate. The contract has no "nearest driver ETA" endpoint yet, so this is a
@@ -209,7 +203,7 @@ export function useRideFlow({ initialRideId }: { initialRideId?: string } = {}) 
           if (active) adoptRide(active);
         } else if (e.code === "PAYMENT_DECLINED") {
           haptic("error");
-          setRequestError({ code: e.code, declineCode: e.declineCode, message: e.declineCode ? DECLINE_COPY[e.declineCode] : e.message });
+          setRequestError({ code: e.code, declineCode: e.declineCode, message: declineMessage(e.declineCode) });
         } else if (e.code === "PAYMENT_METHOD_REQUIRED") {
           haptic("error");
           setRequestError({ code: e.code, message: "Add a payment method to request this ride." });
