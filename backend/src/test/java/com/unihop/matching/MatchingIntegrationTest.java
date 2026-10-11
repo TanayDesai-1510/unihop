@@ -3,6 +3,7 @@ package com.unihop.matching;
 import com.jayway.jsonpath.JsonPath;
 import com.unihop.payments.PaymentService;
 import com.unihop.realtime.RealtimePublisher;
+import com.unihop.ride.RideTestData;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,9 +83,7 @@ class MatchingIntegrationTest {
 
     @AfterEach
     void cleanUp() {
-        jdbc.update("DELETE FROM ride_offers");
-        jdbc.update("DELETE FROM ride_payments");
-        jdbc.update("DELETE FROM rides");
+        RideTestData.deleteAllRides(jdbc);
         for (Map<String, Object> d : seededDrivers) {
             jdbc.update("UPDATE driver_profiles SET is_online = ?, current_lat = ?, current_lng = ? WHERE user_id = ?",
                     d.get("is_online"), d.get("current_lat"), d.get("current_lng"), d.get("user_id"));
