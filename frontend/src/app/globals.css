@@ -38,6 +38,9 @@
   --brand-logo: #002e73;
   --shadow-knob: 0 2px 6px rgba(14, 17, 22, 0.18);
   --route-casing: #ffffff;
+  /* Apple Pay-style confirmation sheet (DESIGN.md section 8: black sheet), same in both modes. */
+  --wallet-dark: #000000;
+  --wallet-dark-ink: #ffffff;
 
   /* Motion (DESIGN.md section 7). */
   --ease-out-ui: cubic-bezier(0.2, 0.8, 0.2, 1);
