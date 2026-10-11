@@ -162,9 +162,27 @@ export function useRideFlow({ initialRideId }: { initialRideId?: string } = {}) 
       setDriverPos({ lat: e.lat, lng: e.lng, heading: e.heading });
       setEtaSeconds(e.etaSeconds);
     });
+    // Events sent before the subscription was live, or while the socket was down, are gone for
+    // good. Re-read the ride whenever the socket is (re)connected so the screen always catches up.
+    let catchUp: ReturnType<typeof setTimeout> | undefined;
+    const offConn = realtime.onConnectionChange((state) => {
+      if (state !== "connected") return;
+      clearTimeout(catchUp);
+      catchUp = setTimeout(() => {
+        api
+          .getRide(rideId)
+          .then((r) => {
+            lastStatus.current = r.status;
+            setRide(r);
+          })
+          .catch(() => {});
+      }, 0);
+    });
     return () => {
+      clearTimeout(catchUp);
       offStatus();
       offLoc();
+      offConn();
     };
   }, [rideId]);
 
