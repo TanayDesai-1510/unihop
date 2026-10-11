@@ -45,6 +45,15 @@ public class RideRepository {
         return jdbc.query("SELECT * FROM rides WHERE share_token = ?", MAPPER, shareToken).stream().findFirst();
     }
 
+    /** REQUESTED rides whose scheduled time has arrived and that were never offered to anyone. */
+    public List<UUID> dueScheduledRideIds() {
+        return jdbc.queryForList("""
+                SELECT r.id FROM rides r
+                WHERE r.status = 'REQUESTED' AND r.scheduled_for IS NOT NULL AND r.scheduled_for <= now()
+                  AND NOT EXISTS (SELECT 1 FROM ride_offers o WHERE o.ride_id = r.id)
+                ORDER BY r.scheduled_for""", UUID.class);
+    }
+
     /** Row-locks the ride for the rest of the transaction. */
     public Optional<RideRow> findForUpdate(UUID id) {
         return jdbc.query("SELECT * FROM rides WHERE id = ? FOR UPDATE", MAPPER, id).stream().findFirst();
@@ -117,7 +126,8 @@ public class RideRepository {
                 instant(rs, "completed_at"),
                 instant(rs, "cancelled_at"),
                 rs.getString("cancel_reason"),
-                rs.getString("cancelled_by"));
+                rs.getString("cancelled_by"),
+                instant(rs, "scheduled_for"));
     }
 
     static Instant instant(ResultSet rs, String column) throws SQLException {

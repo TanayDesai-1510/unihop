@@ -10,7 +10,8 @@ public final class RideTestData {
 
     /**
      * Deletes every ride and everything that references one, children first. The real PaymentService writes
-     * ride_payments, credit_transactions (RIDE_SPEND / RIDE_REFUND) and driver_earnings (RIDE_EARNING) per ride;
+     * ride_payments, a mockpay_charges hold, credit_transactions (RIDE_SPEND / RIDE_REFUND) and driver_earnings
+     * (RIDE_EARNING) per ride;
      * removing the ride-linked rows also restores seeded balances (rider1's 5.00 PROMO credit has no ride).
      */
     public static void deleteAllRides(JdbcTemplate jdbc) {
@@ -18,6 +19,8 @@ public final class RideTestData {
         jdbc.update("DELETE FROM ratings");
         jdbc.update("DELETE FROM driver_earnings WHERE ride_id IS NOT NULL");
         jdbc.update("DELETE FROM credit_transactions WHERE ride_id IS NOT NULL");
+        // the mock processor's charge for each ride's card hold; tests sharing this database count charges
+        jdbc.update("DELETE FROM mockpay_charges WHERE id IN (SELECT gateway_ref FROM ride_payments WHERE gateway_ref IS NOT NULL)");
         jdbc.update("DELETE FROM ride_payments");
         jdbc.update("DELETE FROM ride_offers");
         jdbc.update("DELETE FROM rides");
