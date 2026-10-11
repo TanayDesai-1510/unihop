@@ -1,5 +1,5 @@
-import { HomeStub } from "@/components/app/HomeStub";
+import { DriverFlow } from "@/components/driver/DriverFlow";
 
 export default function DriverHomePage() {
-  return <HomeStub mode="DRIVER" issue={37} />;
+  return <DriverFlow />;
 }

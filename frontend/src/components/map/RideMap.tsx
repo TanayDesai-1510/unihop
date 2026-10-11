@@ -18,6 +18,8 @@ export interface RideMapProps {
   phase: MapPhase;
   /** Last reported driver position (enroute / trip). */
   driver?: { lat: number; lng: number; heading?: number } | null;
+  /** Driver app: your own position, shown as the car outside a ride (online, offer). */
+  self?: { lat: number; lng: number } | null;
   /** Pixels of the map covered by the sheet at its current detent (camera padding). */
   bottomInset: number;
   /** Confirm phase: the map was dragged under the fixed pin and snapped to this hub. */
@@ -30,7 +32,7 @@ const CAR_GLIDE_MS = 1300;
 
 const ll = (h: Hub): LatLng => [h.lat, h.lng];
 
-export default function RideMap({ hubs, pickupId, dropoffId, phase, driver, bottomInset, onPickupSnap, onHubTap }: RideMapProps) {
+export default function RideMap({ hubs, pickupId, dropoffId, phase, driver, self, bottomInset, onPickupSnap, onHubTap }: RideMapProps) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const tiles = useRef<L.TileLayer | null>(null);
@@ -39,6 +41,7 @@ export default function RideMap({ hubs, pickupId, dropoffId, phase, driver, bott
   const routePts = useRef<LatLng[] | null>(null);
   const legStart = useRef<LatLng | null>(null);
   const car = useRef<L.Marker | null>(null);
+  const selfMarker = useRef<L.Marker | null>(null);
   const carAnim = useRef<number | null>(null);
   const reduce = useReducedMotion();
   const [dragging, setDragging] = useState(false);
@@ -179,6 +182,20 @@ export default function RideMap({ hubs, pickupId, dropoffId, phase, driver, bott
     carAnim.current = requestAnimationFrame(step);
   }, [driver, phase, pickup, dropoff, reduce]);
 
+  // ---- driver app: own position outside a ride ----
+  const showSelf = !!self && !(driver && (phase === "enroute" || phase === "trip"));
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    if (!showSelf || !self) {
+      selfMarker.current?.remove();
+      selfMarker.current = null;
+      return;
+    }
+    if (!selfMarker.current) selfMarker.current = L.marker([self.lat, self.lng], { icon: carIcon(0), keyboard: false, zIndexOffset: 900, interactive: false }).addTo(m);
+    else selfMarker.current.setLatLng([self.lat, self.lng]);
+  }, [showSelf, self]);
+
   // ---- camera: refit on every state change ----
   useEffect(() => {
     const m = map.current;
@@ -192,6 +209,7 @@ export default function RideMap({ hubs, pickupId, dropoffId, phase, driver, bott
     if (pickup && phase !== "trip") pts.push(ll(pickup));
     if (dropoff && phase !== "enroute") pts.push(ll(dropoff));
     if (driver && (phase === "enroute" || phase === "trip")) pts.push([driver.lat, driver.lng]);
+    if (self && showSelf && phase === "options") pts.push([self.lat, self.lng]);
     if (phase === "matching" && pickup) {
       centerOnVisual(m, ll(pickup), 15.5, insetRef.current, !reduce);
       return;
