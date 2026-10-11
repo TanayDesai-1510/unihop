@@ -1,0 +1,10 @@
+# Test-only overrides, layered on top of src/main/resources/application.yml.
+# Lets ./mvnw test run without a root .env (cloud sessions). The datasource is replaced by
+# zonky embedded Postgres via @AutoConfigureEmbeddedDatabase.
+app:
+  jwt:
+    secret: test-secret-test-secret-test-secret-test-secret
+  simulator:
+    enabled: false
+  mockpay:
+    latency-ms: 0

@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: unihop
+  config:
+    import: optional:file:../.env[.properties]
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/unihop
+    username: unihop
+    password: unihop
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
+server:
+  port: 8080
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  cors:
+    origins: ${CORS_ORIGINS:http://localhost:3000}
+  auth:
+    demo-header: true
+  simulator:
+    enabled: true
+  mockpay:
+    latency-ms: 800
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}

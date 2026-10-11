@@ -1,0 +1,22 @@
+{
+  "name": "unihop",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": { "version": "21" },
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [3000, 8080],
+  "postCreateCommand": "npm i -g @anthropic-ai/claude-code @openai/codex && cd frontend && npm ci",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-boot-dev-pack",
+        "anthropic.claude-code"
+      ]
+    }
+  }
+}
