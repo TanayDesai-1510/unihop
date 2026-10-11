@@ -1,5 +1,5 @@
-import { RouteStub } from "@/components/RouteStub";
+import { EarningsScreen } from "@/components/earnings/EarningsScreen";
 
 export default function EarningsPage() {
-  return <RouteStub title="Earnings" issue={43} scene="coins" headline="Your earnings" />;
+  return <EarningsScreen />;
 }
