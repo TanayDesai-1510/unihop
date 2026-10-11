@@ -41,6 +41,19 @@ public class RideRepository {
         return jdbc.query("SELECT * FROM rides WHERE id = ?", MAPPER, id).stream().findFirst();
     }
 
+    /** Row-locks the ride for the rest of the transaction. */
+    public Optional<RideRow> findForUpdate(UUID id) {
+        return jdbc.query("SELECT * FROM rides WHERE id = ? FOR UPDATE", MAPPER, id).stream().findFirst();
+    }
+
+    /** REQUESTED -> NO_DRIVERS (contract section 10). Caller holds the row lock and has checked the transition. */
+    public void markNoDrivers(UUID id) {
+        jdbc.update("""
+                UPDATE rides SET status = 'NO_DRIVERS', cancelled_by = 'SYSTEM', cancel_reason = 'No drivers available',
+                                 cancelled_at = now()
+                WHERE id = ?""", id);
+    }
+
     /** The user's non-terminal ride as rider or driver, newest first. */
     public Optional<RideRow> findActiveFor(UUID userId) {
         return jdbc.query("SELECT * FROM rides WHERE (rider_id = ? OR driver_id = ?) AND status IN " + ACTIVE_STATUSES

@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /** One {@code rides} row. */
-record RideRow(
+public record RideRow(
         UUID id,
         UUID riderId,
         UUID driverId,
@@ -27,7 +27,7 @@ record RideRow(
         String cancelledBy
 ) {
 
-    boolean isParticipant(UUID userId) {
+    public boolean isParticipant(UUID userId) {
         return userId.equals(riderId) || userId.equals(driverId);
     }
 }

@@ -7,6 +7,7 @@ import com.unihop.pricing.FareBreakdown;
 import com.unihop.pricing.FareService;
 import com.unihop.ride.dto.Ride;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +27,11 @@ public class RideService {
     private final RideViews views;
     private final FareService fareService;
     private final PaymentService paymentService;
+    private final ApplicationEventPublisher events;
 
     /**
      * Quote, insert REQUESTED, authorize, all in one transaction: a 402 from {@code authorizeRide} rolls the ride back.
+     * Matching starts after commit ({@link RideRequestedEvent}).
      */
     @Transactional
     public Ride create(UUID riderId, CreateRideRequest request) {
@@ -45,6 +48,7 @@ public class RideService {
         PaymentSummary payment = paymentService.authorizeRide(rideId, riderId, request.paymentMethodId(),
                 Boolean.TRUE.equals(request.useCredits()), fare.total());
         RideRow ride = rides.find(rideId).orElseThrow();
+        events.publishEvent(new RideRequestedEvent(rideId));
         return views.ride(ride, riderId, payment);
     }
 
