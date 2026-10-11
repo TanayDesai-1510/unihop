@@ -12,10 +12,12 @@ import io.jsonwebtoken.security.Keys;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import com.unihop.ride.RideTestData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
@@ -60,6 +62,9 @@ class WebSocketIntegrationTest {
     @Autowired
     RealtimePublisher publisher;
 
+    @Autowired
+    JdbcTemplate jdbc;
+
     @Value("${app.jwt.secret}")
     String jwtSecret;
 
@@ -72,12 +77,13 @@ class WebSocketIntegrationTest {
             session.disconnect();
         }
         client.stop();
+        RideTestData.deleteAllRides(jdbc);
     }
 
     @Test
     void riderReceivesStatusAndLocationWithContractShape() throws Exception {
         session = connect("X-Demo-User", RIDER1.toString());
-        UUID rideId = UUID.randomUUID();
+        UUID rideId = insertRide();
         BlockingQueue<JsonNode> status = subscribe(Topics.rideStatus(rideId));
         BlockingQueue<JsonNode> location = subscribe(Topics.rideLocation(rideId));
 
@@ -145,6 +151,21 @@ class WebSocketIntegrationTest {
     }
 
     @Test
+    void outsiderCannotFollowSomeoneElsesRide() throws Exception {
+        UUID rideId = insertRide();
+        session = connect("X-Demo-User", "00000000-0000-0000-0000-000000000102");
+        BlockingQueue<JsonNode> chat = subscribe(Topics.rideChat(rideId));
+
+        for (int i = 0; i < 20 && session.isConnected(); i++) {
+            Thread.sleep(100);
+        }
+        // the server answers the forbidden SUBSCRIBE with an ERROR frame and closes the session
+        assertThat(session.isConnected()).isFalse();
+        publisher.chat(rideId, new com.unihop.ride.dto.ChatMessage(UUID.randomUUID(), RIDER1, "secret", Instant.now()));
+        assertThat(chat.poll(500, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @Test
     void connectWithoutCredentialsFails() {
         assertThatThrownBy(() -> connect(null, null)).isInstanceOf(ExecutionException.class);
     }
@@ -195,6 +216,17 @@ class WebSocketIntegrationTest {
         Thread.sleep(150);
         queue.clear();
         queue.add(first);
+    }
+
+    /** An ACCEPTED ride of rider1 with driver1, so both may subscribe to its topics. */
+    private UUID insertRide() {
+        UUID id = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO rides (id, rider_id, driver_id, pickup_hub_id, dropoff_hub_id, status, fare_total, platform_fee,
+                                   base_fare, driver_payout, platform_margin, pin, share_token, accepted_at)
+                VALUES (?, ?, ?, ?, ?, 'ACCEPTED', 6.50, 1.50, 5.00, 4.50, 2.00, '4821', ?, now())""",
+                id, RIDER1, DRIVER1, YARD.id(), BUSCH_SC.id(), "share-" + id);
+        return id;
     }
 
     private static String jwt(UUID subject, String secret) {

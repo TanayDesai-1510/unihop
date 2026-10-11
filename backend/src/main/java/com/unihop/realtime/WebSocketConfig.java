@@ -1,6 +1,7 @@
 package com.unihop.realtime;
 
 import com.unihop.auth.JwtSubjectReader;
+import com.unihop.ride.RideRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -21,9 +22,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     public WebSocketConfig(@Value("${app.cors.origins}") String origins,
                            @Value("${app.auth.demo-header:false}") boolean demoHeaderEnabled,
-                           JwtSubjectReader jwtSubjectReader) {
+                           JwtSubjectReader jwtSubjectReader,
+                           RideRepository rides) {
         this.allowedOrigins = Arrays.stream(origins.split(",")).map(String::trim).toArray(String[]::new);
-        this.authInterceptor = new StompAuthInterceptor(jwtSubjectReader::subject, demoHeaderEnabled);
+        this.authInterceptor = new StompAuthInterceptor(jwtSubjectReader::subject, demoHeaderEnabled,
+                (rideId, userId) -> rides.find(rideId).map(ride -> ride.isParticipant(userId)).orElse(false));
     }
 
     @Override
