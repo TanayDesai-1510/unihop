@@ -2,6 +2,7 @@ package com.unihop.matching;
 
 import com.unihop.common.ApiException;
 import com.unihop.common.enums.RideStatus;
+import com.unihop.realtime.RideBroadcaster;
 import com.unihop.ride.RideRepository;
 import com.unihop.ride.RideRow;
 import com.unihop.ride.RideTransitions;
@@ -27,6 +28,7 @@ public class OfferService {
     private final OfferRepository offers;
     private final RideViews views;
     private final MatchingService matching;
+    private final RideBroadcaster broadcaster;
 
     /** Driver holding the live offer takes the ride: ACCEPTED, driver assigned, 4-digit PIN generated. */
     @Transactional
@@ -36,6 +38,7 @@ public class OfferService {
         RideTransitions.check(ride.status(), RideStatus.ACCEPTED);
         offers.respond(offer.id(), "ACCEPTED");
         rides.markAccepted(rideId, driverId, newPin());
+        broadcaster.statusChanged(rideId);
         return views.ride(rides.find(rideId).orElseThrow(), driverId);
     }
 
