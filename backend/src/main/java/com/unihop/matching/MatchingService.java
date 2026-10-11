@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -46,7 +47,18 @@ public class MatchingService {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onRideRequested(RideRequestedEvent event) {
+        RideRow ride = rides.find(event.rideId()).orElse(null);
+        if (ride == null || ride.isScheduledLater(Instant.now())) {
+            return; // a scheduled ride is dispatched by dispatchDueScheduledRides once its time comes
+        }
         dispatch(event.rideId());
+    }
+
+    /** Starts matching for scheduled rides whose time has arrived (contract section 8, {@code scheduledFor}). */
+    @Scheduled(fixedDelayString = "${app.matching.sweep-ms:1000}")
+    @Transactional
+    public void dispatchDueScheduledRides() {
+        rides.dueScheduledRideIds().forEach(this::dispatch);
     }
 
     /**
