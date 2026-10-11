@@ -62,7 +62,7 @@ export function BottomSheet({
 
   // Backdrop fades in only across the last stretch, between the second-highest snap and full.
   const backdropFrom = snapPoints.length > 1 ? maxH - heights[topIndex - 1] : 1;
-  const backdropOpacity = useTransform(y, [0, Math.max(backdropFrom, 1)], [0.32, 0], { clamp: true });
+  const backdropOpacity = useTransform(y, [0, Math.max(backdropFrom, 1)], [0.18, 0], { clamp: true });
 
   // Measure the container (the sheet's frame fills it).
   useLayoutEffect(() => {

@@ -8,12 +8,15 @@ import { Button } from "./Button";
 /** Friendly empty message plus one action (DESIGN.md section 10). */
 export function EmptyState({
   icon,
+  illustration,
   title,
   message,
   action,
   className,
 }: {
-  icon: ReactNode;
+  icon?: ReactNode;
+  /** Road-motif illustration (components/brand/RoadScene); replaces the icon circle. */
+  illustration?: ReactNode;
   title: string;
   message?: string;
   action?: { label: string; onClick: () => void };
@@ -21,8 +24,8 @@ export function EmptyState({
 }) {
   return (
     <div className={cn("flex flex-col items-center gap-3 px-6 py-10 text-center", className)}>
-      <span className="flex size-14 items-center justify-center rounded-full bg-surface text-ink">{icon}</span>
-      <h2 className="text-headline text-ink">{title}</h2>
+      {illustration ?? <span className="flex size-14 items-center justify-center rounded-full bg-surface text-ink">{icon}</span>}
+      <h2 className="text-title text-ink">{title}</h2>
       {message && <p className="max-w-[280px] text-label font-normal text-ink-muted">{message}</p>}
       {action && (
         <Button variant="secondary" size="md" block={false} className="mt-2" onClick={action.onClick}>

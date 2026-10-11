@@ -24,8 +24,10 @@
   --on-accent: #ffffff;
 
   /* Elevation (DESIGN.md section 4). Dark mode swaps shadows for borders. */
-  --shadow-sheet: 0 -8px 30px rgba(14, 17, 22, 0.12);
-  --shadow-float: 0 4px 16px rgba(14, 17, 22, 0.08);
+  /* Depth (DESIGN.md 3b): layered soft shadows, tight + wide, never one harsh drop. */
+  --shadow-sheet: 0 -1px 2px rgba(14, 17, 22, 0.04), 0 -8px 30px rgba(14, 17, 22, 0.12);
+  --shadow-float: 0 1px 2px rgba(14, 17, 22, 0.06), 0 6px 20px rgba(14, 17, 22, 0.08);
+  --shadow-lift: 0 2px 4px rgba(14, 17, 22, 0.1), 0 12px 28px rgba(14, 17, 22, 0.16);
   --border-elevated: transparent;
   /* Backdrop behind full-height sheets (navy-black); opacity set by the component. */
   --scrim: #0a1222;
@@ -67,6 +69,7 @@
 
     --shadow-sheet: none;
     --shadow-float: none;
+    --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.35);
     --border-elevated: var(--line);
 
     color-scheme: dark;
@@ -94,6 +97,7 @@
 
   --shadow-sheet: none;
   --shadow-float: none;
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.35);
   --border-elevated: var(--line);
 
   color-scheme: dark;
@@ -161,6 +165,7 @@
 
   --shadow-sheet: var(--shadow-sheet);
   --shadow-float: var(--shadow-float);
+  --shadow-lift: var(--shadow-lift);
   --shadow-knob: var(--shadow-knob);
 
   --ease-ui: var(--ease-out-ui);
@@ -395,4 +400,75 @@ body {
 }
 .leaflet-control-attribution a {
   color: var(--brand) !important;
+}
+
+
+/* ---------- Brand surfaces (components/brand) ---------- */
+
+/* Ticket: two halves, each masked with half-circle notches at the tear line. */
+.ticket {
+  --notch: 11px;
+  filter: drop-shadow(0 1px 1px rgba(14, 17, 22, 0.06)) drop-shadow(0 8px 18px rgba(14, 17, 22, 0.08));
+}
+.ticket-half {
+  background: var(--surface-raised);
+}
+.ticket-top {
+  border-radius: 16px 16px 0 0;
+  mask: radial-gradient(circle var(--notch) at 0 100%, transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% 100%, transparent 98%, #000) right / 51% 100% no-repeat;
+}
+.ticket-bottom {
+  border-radius: 0 0 16px 16px;
+  mask: radial-gradient(circle var(--notch) at 0 0, transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% 0, transparent 98%, #000) right / 51% 100% no-repeat;
+}
+.ticket-tear {
+  height: 2px;
+  margin: 0 calc(var(--notch) + 6px);
+  background: radial-gradient(circle, var(--line) 1.2px, transparent 1.3px) 0 0 / 8px 2px repeat-x;
+  position: relative;
+}
+.ticket-tear::before {
+  /* fills the strip between halves so the tear line sits on the ticket, not on the page */
+  content: "";
+  position: absolute;
+  inset: 0 calc(-1 * (var(--notch) + 6px));
+  background: var(--surface-raised);
+  z-index: -1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ticket {
+    filter: none;
+  }
+}
+:root[data-theme="dark"] .ticket {
+  filter: none;
+}
+
+/* Navy hero surface with a soft orange glow (~12%) in one corner. */
+.hero-surface {
+  background:
+    radial-gradient(120% 70% at 105% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%),
+    var(--brand-logo);
+}
+.hero-surface.hero-glow-bl {
+  background:
+    radial-gradient(110% 70% at -10% 110%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 55%),
+    var(--brand-logo);
+}
+
+/* Glass sheet over the map: surface-raised at 92%, blur 20, saturate 1.4, hairline top. */
+.glass-sheet {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+  border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent) !important;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-sheet {
+    background: var(--surface-raised) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
