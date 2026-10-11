@@ -74,6 +74,13 @@ public class RideRepository {
         jdbc.update("UPDATE rides SET status = ?, " + column + " = now() WHERE id = ?", status.name(), id);
     }
 
+    /** -> CANCELLED by RIDER or DRIVER. Caller holds the row lock and has checked the transition. */
+    public void markCancelled(UUID id, String cancelledBy, String reason) {
+        jdbc.update("""
+                UPDATE rides SET status = 'CANCELLED', cancelled_by = ?, cancel_reason = ?, cancelled_at = now()
+                WHERE id = ?""", cancelledBy, reason, id);
+    }
+
     /** The user's non-terminal ride as rider or driver, newest first. */
     public Optional<RideRow> findActiveFor(UUID userId) {
         return jdbc.query("SELECT * FROM rides WHERE (rider_id = ? OR driver_id = ?) AND status IN " + ACTIVE_STATUSES

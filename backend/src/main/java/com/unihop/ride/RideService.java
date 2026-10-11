@@ -2,6 +2,7 @@ package com.unihop.ride;
 
 import com.unihop.common.ApiException;
 import com.unihop.common.enums.RideStatus;
+import com.unihop.matching.MatchingService;
 import com.unihop.payments.PaymentService;
 import com.unihop.payments.PaymentSummary;
 import com.unihop.pricing.FareBreakdown;
@@ -29,6 +30,7 @@ public class RideService {
     private final FareService fareService;
     private final PaymentService paymentService;
     private final ApplicationEventPublisher events;
+    private final MatchingService matching;
 
     /**
      * Quote, insert REQUESTED, authorize, all in one transaction: a 402 from {@code authorizeRide} rolls the ride back.
@@ -92,6 +94,31 @@ public class RideService {
         rides.markProgress(rideId, RideStatus.COMPLETED);
         paymentService.captureRide(rideId);
         return views.ride(rides.find(rideId).orElseThrow(), driverId);
+    }
+
+    /**
+     * Rider or assigned driver cancels from REQUESTED, ACCEPTED or ARRIVED. Revokes a live offer and voids the payment
+     * in the same transaction, so the rider is never charged (contract section 5, step 3).
+     */
+    @Transactional
+    public Ride cancel(UUID rideId, UUID callerId, String reason) {
+        RideRow ride = rides.findForUpdate(rideId)
+                .orElseThrow(() -> ApiException.notFound("NOT_FOUND", "Ride not found"));
+        String cancelledBy;
+        if (callerId.equals(ride.riderId())) {
+            cancelledBy = "RIDER";
+        } else if (callerId.equals(ride.driverId())) {
+            cancelledBy = "DRIVER";
+        } else {
+            throw ApiException.forbidden("Not a participant in this ride");
+        }
+        RideTransitions.check(ride.status(), RideStatus.CANCELLED);
+        rides.markCancelled(rideId, cancelledBy, reason == null || reason.isBlank() ? null : reason.trim());
+        if (ride.status() == RideStatus.REQUESTED) {
+            matching.revokeLiveOffer(rideId);
+        }
+        paymentService.voidRide(rideId);
+        return views.ride(rides.find(rideId).orElseThrow(), callerId);
     }
 
     private RideRow lockForAssignedDriver(UUID rideId, UUID driverId) {

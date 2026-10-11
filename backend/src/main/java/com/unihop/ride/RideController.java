@@ -55,4 +55,9 @@ public class RideController {
     public Ride complete(@PathVariable UUID id) {
         return rides.complete(id, currentUser.id());
     }
+
+    @PostMapping("/{id}/cancel")
+    public Ride cancel(@PathVariable UUID id, @Valid @RequestBody CancelRideRequest body) {
+        return rides.cancel(id, currentUser.id(), body.reason());
+    }
 }
