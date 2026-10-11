@@ -1,6 +1,5 @@
 package com.unihop.realtime;
 
-import com.unihop.common.enums.RideStatus;
 import com.unihop.ride.RideRepository;
 import com.unihop.ride.RideRow;
 import com.unihop.ride.RideViews;
@@ -29,7 +28,7 @@ public class RideBroadcaster {
         RideRow ride = rides.find(rideId).orElseThrow();
         DriverCard driver = ride.driverId() == null ? null : views.driverCard(ride.driverId());
         Integer eta = driver == null || driver.lat() == null || driver.lng() == null ? null
-                : etaToTarget(ride, driver.lat(), driver.lng());
+                : views.etaSeconds(ride, driver.lat(), driver.lng());
         RideStatusEvent event = new RideStatusEvent(ride.id(), ride.status(), driver, eta, Instant.now());
         AfterCommit.run(() -> publisher.rideStatus(event));
     }
@@ -43,11 +42,11 @@ public class RideBroadcaster {
         if (ride == null) {
             return;
         }
-        Integer eta = etaToTarget(ride, lat, lng);
+        Integer eta = views.etaSeconds(ride, lat, lng);
         if (eta == null) {
             return;
         }
-        Hub target = target(ride);
+        Hub target = views.currentTarget(ride);
         boolean moved = fromLat != null && fromLng != null && (fromLat != lat || fromLng != lng);
         double heading = moved ? Navigation.heading(fromLat, fromLng, lat, lng)
                 : Navigation.heading(lat, lng, target.lat(), target.lng());
@@ -55,19 +54,4 @@ public class RideBroadcaster {
         AfterCommit.run(() -> publisher.rideLocation(ride.id(), event));
     }
 
-    /** Pickup while ACCEPTED, dropoff while IN_PROGRESS, else null. */
-    private Integer etaToTarget(RideRow ride, double lat, double lng) {
-        Hub target = target(ride);
-        return target == null ? null : Navigation.etaSeconds(lat, lng, target.lat(), target.lng());
-    }
-
-    private Hub target(RideRow ride) {
-        if (ride.status() == RideStatus.ACCEPTED) {
-            return views.hub(ride.pickupHubId());
-        }
-        if (ride.status() == RideStatus.IN_PROGRESS) {
-            return views.hub(ride.dropoffHubId());
-        }
-        return null;
-    }
 }
