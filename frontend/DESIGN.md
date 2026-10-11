@@ -101,7 +101,7 @@ The logo's **road** is the signature motif. Use it with intent, not everywhere.
 ## 6. Components
 Build these once in `src/components/ui/` and reuse everywhere.
 
-- **Button**: height 52, full width by default, radius 14, Headline-weight text. Variants: primary (brand navy fill), accent (orange fill, only the one hero CTA per screen like "Request UniHop" and "Accept"), secondary (surface fill), ghost (text only), danger-outline. Loading state shows a spinner and keeps width fixed. Pressed state scales to 0.98.
+- **Button**: height 52, full width by default, radius 14, Headline-weight text. Variants: primary (brand navy fill), accent (orange fill, only the one hero CTA per screen like "Request UniHop" and "Accept"), secondary (surface fill), ghost (text only), danger-outline. Loading state shows a spinner and keeps width fixed. Pressed state scales to 0.97 (see section 7).
 - **Input**: height 52, surface fill, no border until focus (2px brand ring), label above, error text below in danger.
 - **Card**: surface-raised, radius 16, padding 16.
 - **ListRow**: 56 to 64 tall, leading icon or avatar, title + secondary text, trailing value or chevron. Used for hubs, payment methods, rides.
@@ -113,14 +113,31 @@ Build these once in `src/components/ui/` and reuse everywhere.
 - Icons: `lucide-react`, 20 or 24px, stroke 1.75 to 2, rounded caps. No emoji as icons.
 
 ## 7. Motion
-Use `motion` (Framer Motion) for sheets and state transitions; CSS for small things.
-- Durations: 150ms (press, toggles), 250ms (sheets, cards in/out), 400ms (major state changes). Easing: `cubic-bezier(0.2, 0.8, 0.2, 1)`.
+Use `motion` (Framer Motion) for sheets and state transitions; CSS for small things. The system lives in `src/lib/motion.ts`.
+
+**Springs, not tweens, for anything that moves.** Three named springs cover the app. Springs start from the current on-screen value and carry velocity, so every animation can be grabbed and redirected mid-flight.
+
+| Spring | Stiffness / damping | Use |
+|---|---|---|
+| `springSnappy` | 500 / 35 | Presses, toggles, small controls, chips |
+| `springSmooth` | 260 / 30 | Sheets, cards, ride-state changes, number ticks, shared-element morphs |
+| `springHop` | 600 / 14 | The hop: accent CTA becoming enabled, success check, hop dots |
+
+- **Press**: every pressable scales to 0.97 while held (`PRESS_SCALE`), on pointer-down, snappy spring back.
+- **Bottom sheet (iOS detents)**: peek, half, full. 1:1 drag, velocity-based snapping (momentum projected with Apple's deceleration formula, release velocity handed to the spring), rubber-banding past the edges, interruptible mid-animation. The map dims slightly (18%) only at the full detent. Content scrolls only at full.
+- **Shared elements** (`layoutId`): the ride option row morphs into the confirm card; the driver card carries from offer to active ride; the fare ticket carries from request to receipt.
+- **Ride states** swap inside the same sheet with `AnimatePresence mode="popLayout"` (cross-fade + 16px slide, `stateSwap`), and the sheet content height animates with `layout`.
+- **Numbers tick**: fares and ETAs animate to new values (smooth spring); earnings count up on first view. Written straight from motion values, never re-rendering React per frame.
+- **Large titles** on list screens collapse into a compact blurred top bar on scroll (opacity + transform from scroll position).
+- **Haptics** (`navigator.vibrate`, same frame as the visual): offer arrives, ride accepted / offer accepted, driver arrived, payment success, decline (short double pulse). Nothing else vibrates.
+- **Only transform and opacity animate.** Never width, height, top, left, or colors on large surfaces.
+- Tween durations for opacity/color only: 150ms (press, toggles), 250ms (sheets, cards in/out), 400ms (major state changes). Easing: `cubic-bezier(0.2, 0.8, 0.2, 1)`.
 - Ride states cross-fade and slide within the same sheet rather than jumping to a new page.
 - Finding driver: pulsing accent ring around the logo-shaped pickup pin.
 - Driver offer: circular countdown ring (15s) in accent, turning danger in the last 5s.
 - Live car marker glides between location updates (interpolate, don't teleport) and rotates to heading.
 - Card decline: input row shakes once (200ms) plus the error message.
-- Respect `prefers-reduced-motion`: replace movement with fades.
+- Respect `prefers-reduced-motion`: replace movement with fades (`MotionConfig reducedMotion="user"` app-wide, plus `fadeUI` where a component picks its own fallback). Loops (pulse, hop dots) become gentle opacity changes.
 
 ## 8. Key screens
 - **Splash**: logo icon centered on `--brand`, scales in with a soft spring, road lane draws in, then fades to login or home (under 1.2s total, skipped on repeat visits).

@@ -2,16 +2,18 @@
 // Fire on the same frame as the visual change that caused it, and only on key moments.
 
 const PATTERNS = {
-  /** Light tick: snap points, toggles. */
+  /** Light tick: snap points, toggles, hub chips. */
   tick: 8,
-  /** A driver offer arrives. */
-  offer: [30, 60, 30],
-  /** Driver accepted your ride. */
+  /** A driver offer arrives (driver app). */
+  offer: [30, 60, 30, 60, 40],
+  /** A driver accepted your ride / you accepted an offer. */
   accepted: [20, 40, 40],
+  /** Driver arrived at the pickup. */
+  arrived: [40, 80, 40],
   /** Payment succeeded, ride completed. */
   success: [15, 30, 25],
-  /** Decline or blocking error. */
-  error: [40, 50, 40],
+  /** Card declined or blocking error: short double pulse. */
+  error: [35, 45, 35],
 } as const satisfies Record<string, number | readonly number[]>;
 
 export type HapticKind = keyof typeof PATTERNS;

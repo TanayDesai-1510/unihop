@@ -59,7 +59,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, p
               onKeyDown={(e) => onKey(e, i)}
               className={cn(
                 "relative z-0 flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-3 text-label font-semibold",
-                "transition-colors duration-150 ease-ui",
+                "transition-[color,transform] duration-150 ease-ui active:scale-[0.97]",
                 selected ? "text-on-brand" : "text-ink-muted",
                 pending && "opacity-60",
               )}

@@ -49,7 +49,7 @@ export function ListRow({ title, subtitle, leading, trailing, chevron, selected,
     "flex min-h-14 w-full items-center gap-3 rounded-card px-3 py-2 text-left",
     "transition-[background-color,transform] duration-150 ease-ui",
     selected && "bg-brand-soft",
-    interactive && !disabled && "active:scale-[0.99] active:bg-surface",
+    interactive && !disabled && "active:scale-[0.97] active:bg-surface",
     disabled && "opacity-40",
     className,
   );

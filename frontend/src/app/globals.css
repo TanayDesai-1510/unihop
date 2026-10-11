@@ -472,3 +472,18 @@ body {
     backdrop-filter: none;
   }
 }
+
+/* Compact top bar behind collapsed large titles (and other floating chrome). */
+.glass-bar {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-bar {
+    background: var(--bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
