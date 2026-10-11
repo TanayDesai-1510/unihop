@@ -1,5 +1,5 @@
-import { RouteStub } from "@/components/RouteStub";
+import { PaymentScreen } from "@/components/payment/PaymentScreen";
 
 export default function PaymentPage() {
-  return <RouteStub title="Payment" issue={40} scene="ticket" headline="Your wallet" />;
+  return <PaymentScreen />;
 }
