@@ -2,7 +2,9 @@ package com.unihop.matching;
 
 import com.unihop.common.enums.RideStatus;
 import com.unihop.payments.PaymentService;
+import com.unihop.realtime.AfterCommit;
 import com.unihop.realtime.RealtimePublisher;
+import com.unihop.realtime.RideBroadcaster;
 import com.unihop.ride.RideRepository;
 import com.unihop.ride.RideRequestedEvent;
 import com.unihop.ride.RideRow;
@@ -39,6 +41,7 @@ public class MatchingService {
     private final RideViews views;
     private final PaymentService paymentService;
     private final RealtimePublisher publisher;
+    private final RideBroadcaster broadcaster;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -69,6 +72,7 @@ public class MatchingService {
         RideTransitions.check(ride.status(), RideStatus.NO_DRIVERS);
         rides.markNoDrivers(rideId);
         paymentService.voidRide(rideId);
+        broadcaster.statusChanged(rideId);
         log.info("Ride {} has no drivers left", rideId);
     }
 

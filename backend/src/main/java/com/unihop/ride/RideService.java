@@ -5,6 +5,7 @@ import com.unihop.common.enums.RideStatus;
 import com.unihop.matching.MatchingService;
 import com.unihop.payments.PaymentService;
 import com.unihop.payments.PaymentSummary;
+import com.unihop.realtime.RideBroadcaster;
 import com.unihop.pricing.FareBreakdown;
 import com.unihop.pricing.FareService;
 import com.unihop.ride.dto.Ride;
@@ -31,6 +32,7 @@ public class RideService {
     private final PaymentService paymentService;
     private final ApplicationEventPublisher events;
     private final MatchingService matching;
+    private final RideBroadcaster broadcaster;
 
     /**
      * Quote, insert REQUESTED, authorize, all in one transaction: a 402 from {@code authorizeRide} rolls the ride back.
@@ -71,6 +73,7 @@ public class RideService {
         RideRow ride = lockForAssignedDriver(rideId, driverId);
         RideTransitions.check(ride.status(), RideStatus.ARRIVED);
         rides.markProgress(rideId, RideStatus.ARRIVED);
+        broadcaster.statusChanged(rideId);
         return views.ride(rides.find(rideId).orElseThrow(), driverId);
     }
 
@@ -83,6 +86,7 @@ public class RideService {
             throw ApiException.badRequest("INVALID_PIN", "That PIN doesn't match the rider's");
         }
         rides.markProgress(rideId, RideStatus.IN_PROGRESS);
+        broadcaster.statusChanged(rideId);
         return views.ride(rides.find(rideId).orElseThrow(), driverId);
     }
 
@@ -93,6 +97,7 @@ public class RideService {
         RideTransitions.check(ride.status(), RideStatus.COMPLETED);
         rides.markProgress(rideId, RideStatus.COMPLETED);
         paymentService.captureRide(rideId);
+        broadcaster.statusChanged(rideId);
         return views.ride(rides.find(rideId).orElseThrow(), driverId);
     }
 
@@ -118,6 +123,7 @@ public class RideService {
             matching.revokeLiveOffer(rideId);
         }
         paymentService.voidRide(rideId);
+        broadcaster.statusChanged(rideId);
         return views.ride(rides.find(rideId).orElseThrow(), callerId);
     }
 

@@ -19,6 +19,7 @@ import java.util.UUID;
 public class DriverAvailabilityService {
 
     private final JdbcTemplate jdbc;
+    private final RideBroadcaster broadcaster;
 
     @Transactional
     public DriverProfile goOnline(UUID driverId, double lat, double lng) {
@@ -39,9 +40,12 @@ public class DriverAvailabilityService {
     @Transactional
     public void updateLocation(UUID driverId, double lat, double lng) {
         requireApproved(driverId);
+        Double[] previous = jdbc.queryForObject("SELECT current_lat, current_lng FROM driver_profiles WHERE user_id = ?",
+                (rs, i) -> new Double[]{rs.getObject(1, Double.class), rs.getObject(2, Double.class)}, driverId);
         jdbc.update("""
                 UPDATE driver_profiles SET current_lat = ?, current_lng = ?, last_seen_at = now()
                 WHERE user_id = ?""", lat, lng, driverId);
+        broadcaster.driverMoved(driverId, previous[0], previous[1], lat, lng);
     }
 
     private void requireApproved(UUID driverId) {
