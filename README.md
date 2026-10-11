@@ -23,12 +23,12 @@ UniHop fixes that:
 
 | | |
 |---|---|
-| 💵 **Always under $10** | Every trip has one fixed price, shown before you book. It never surges. |
-| 🎓 **Students only** | You sign in with your Rutgers scarletmail address, so every rider and driver is a fellow student. |
-| 📍 **Campus stops** | Pickups and drop-offs happen at six well-known campus hubs, so no one gets lost. |
-| 🔐 **PIN-protected pickup** | You get a 4-digit PIN. The trip only starts once your driver enters it, so you know you're in the right car. |
-| 💳 **Pay your way** | Cards, Apple Pay, Google Pay, or **UniHop Cash** (prepaid credit). You're only charged when the ride ends. |
-| 🚗 **Drivers keep 90%** | Students who drive keep 90% of every base fare and can cash out instantly. |
+| **Always under $10** | Every trip has one fixed price, shown before you book. It never surges. |
+| **Students only** | You sign in with your Rutgers scarletmail address, so every rider and driver is a fellow student. |
+| **Campus stops** | Pickups and drop-offs happen at six well-known campus hubs, so no one gets lost. |
+| **PIN-protected pickup** | You get a 4-digit PIN. The trip only starts once your driver enters it, so you know you're in the right car. |
+| **Pay your way** | Cards, Apple Pay, Google Pay, or **UniHop Cash** (prepaid credit). You're only charged when the ride ends. |
+| **Drivers keep 90%** | Students who drive keep 90% of every base fare and can cash out instantly. |
 
 ---
 
@@ -36,12 +36,12 @@ UniHop fixes that:
 
 ```mermaid
 flowchart LR
-    A["📍 Pick where<br/>you're going"] --> B["💵 See the<br/>fixed price"]
-    B --> C["✅ Request<br/>the ride"]
-    C --> D["🚗 Nearest student<br/>driver accepts"]
-    D --> E["🔐 Driver enters<br/>your PIN"]
-    E --> F["🏁 Arrive and<br/>pay automatically"]
-    F --> G["⭐ Rate each<br/>other"]
+    A["Pick where<br/>you're going"] --> B["See the<br/>fixed price"]
+    B --> C["Request<br/>the ride"]
+    C --> D["Nearest student<br/>driver accepts"]
+    D --> E["Driver enters<br/>your PIN"]
+    E --> F["Arrive and<br/>pay automatically"]
+    F --> G["Rate each<br/>other"]
 ```
 
 1. **Choose your stop.** Your pickup is the nearest campus hub, and you tap where you want to go.
@@ -58,7 +58,11 @@ flowchart LR
 
 ## Prices
 
-Prices depend only on which campuses you travel between. Every ride includes a flat $1.50 platform and safety fee.
+Every ride has one fixed price, shown before you book. There is no surge pricing and no meter: the price depends only on which campus you are going from and to.
+
+### 1. The price table
+
+Each of the six stops belongs to a campus zone. The fare is looked up from this table using the pickup zone and the drop-off zone, and it is the same in both directions.
 
 | From ↓ / To → | College Ave | Busch | Livingston | Cook / Douglass | Downtown |
 |---|:---:|:---:|:---:|:---:|:---:|
@@ -68,9 +72,33 @@ Prices depend only on which campuses you travel between. Every ride includes a f
 | **Cook / Douglass** | $6.50 | $8.50 | $8.50 | $4.50 | $5.50 |
 | **Downtown** | $4.50 | $6.50 | $6.50 | $5.50 | $4.50 |
 
-**Where the money goes on a $6.50 ride:** $1.50 platform fee, **$4.50 to the driver** (90% of the $5.00 base fare), $0.50 to UniHop.
+- **Same zone, different stop** (for example Cook Campus Center to Douglass Student Center) costs $4.50.
+- **The same stop** for pickup and drop-off is not allowed.
+- **Every fare is under $10.**
 
 **The six stops:** The Yard (College Ave) · Busch Student Center · Livingston Student Center · Cook Campus Center · Douglass Student Center · New Brunswick Station (Downtown)
+
+### 2. How each fare is split
+
+```
+platform fee     = $1.50 (fixed, every ride)
+base fare        = total - $1.50
+driver earns     = 90% of the base fare
+UniHop keeps     = total - driver earns   (the $1.50 fee plus 10% of the base fare)
+```
+
+All amounts are rounded to the nearest cent.
+
+| Rider pays | Base fare | Driver earns | UniHop keeps |
+|---|---|---|---|
+| $4.50 | $3.00 | **$2.70** | $1.80 |
+| $5.50 | $4.00 | **$3.60** | $1.90 |
+| $6.50 | $5.00 | **$4.50** | $2.00 |
+| $8.50 | $7.00 | **$6.30** | $2.20 |
+
+### 3. How the rider pays
+
+UniHop Cash (prepaid credit) is used first when the rider turns it on, and only the rest goes on their card, Apple Pay or Google Pay. Nothing is charged until the ride ends. A cancelled ride, or a ride with no driver available, costs nothing.
 
 ---
 
@@ -103,9 +131,9 @@ There are four more demo drivers parked around campus. Unless someone is signed 
 
 | Card number | What happens |
 |---|---|
-| 4242 4242 4242 4242 | ✅ Works (Visa) |
-| 5555 5555 5555 4444 | ✅ Works (Mastercard) |
-| 4000 0000 0000 0002 | ❌ Gets declined when you use it |
+| 4242 4242 4242 4242 | Works (Visa) |
+| 5555 5555 5555 4444 | Works (Mastercard) |
+| 4000 0000 0000 0002 | Gets declined when you use it |
 
 ---
 
