@@ -4,6 +4,8 @@
 
 # UniHop
 
+[![CI](https://github.com/TanayDesai-1510/unihop/actions/workflows/ci.yml/badge.svg)](https://github.com/TanayDesai-1510/unihop/actions/workflows/ci.yml)
+
 ### Campus rides by students, for students. Every ride under $10.
 
 UniHop is a ride-sharing app made only for Rutgers. You pick a campus stop, see the exact price before you book,<br/>
@@ -200,6 +202,16 @@ docker compose -f .devcontainer/docker-compose.yml down -v   # reset the databas
 ```
 
 The demo drivers are controlled by `app.simulator.enabled` (on by default). Turn it off with `APP_SIMULATOR_ENABLED=false` when you want a real phone to receive the offers.
+
+**Continuous integration**
+
+Every pull request to `main` and every push to `main` runs the same quality gates used locally:
+
+- Java 21 backend tests against embedded PostgreSQL 16
+- Node 22 frontend dependency installation, ESLint and the optimized Next.js build
+- The full golden-path smoke test against an isolated PostgreSQL container, including payment capture, driver earnings, declined-card rollback, cancellation void and credit restoration
+
+The workflow uses synthetic test configuration and never needs the Anthropic or ElevenLabs API keys. Reproduce the first two checks with the commands above. For the smoke check, start PostgreSQL and the backend, then run `scripts/smoke.sh`.
 
 </details>
 
