@@ -13,13 +13,13 @@
     "perf": "tsx scripts/perf-trace.ts"
   },
   "dependencies": {
-    "@stomp/stompjs": "^7.3.0",
+    "@stomp/stompjs": "^7.5.0",
     "leaflet": "^1.9.4",
-    "lucide-react": "^1.55.0",
-    "motion": "^14.1.0",
-    "next": "16.4.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "lucide-react": "^1.58.0",
+    "motion": "^14.3.0",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
@@ -30,8 +30,8 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.4.0",
-    "playwright": "^1.64.0",
+    "eslint-config-next": "16.4.2",
+    "playwright": "^1.64.1",
     "sharp": "^0.35.5",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
